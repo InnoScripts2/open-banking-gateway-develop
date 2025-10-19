@@ -1,0 +1,85 @@
+package de.adorsys.opba.protocol.xs2a.service.xs2a.dto;
+
+import de.adorsys.opba.protocol.bpmnshared.dto.DtoMapper;
+import de.adorsys.opba.protocol.xs2a.context.ais.TransactionListXs2aContext;
+import de.adorsys.opba.protocol.xs2a.service.xs2a.annotations.ContextCode;
+import de.adorsys.opba.protocol.xs2a.service.xs2a.annotations.FrontendCode;
+import de.adorsys.opba.protocol.xs2a.service.xs2a.annotations.ValidationInfo;
+import de.adorsys.xs2a.adapter.api.RequestParams;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.mapstruct.Mapper;
+
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static de.adorsys.opba.protocol.api.dto.codes.FieldCode.BOOKING_STATUS;
+import static de.adorsys.opba.protocol.api.dto.codes.TypeCode.STRING;
+import static de.adorsys.opba.protocol.xs2a.constant.GlobalConst.SPRING_KEYWORD;
+import static de.adorsys.opba.protocol.xs2a.constant.GlobalConst.XS2A_MAPPERS_PACKAGE;
+
+/**
+ * XS2A transaction list describing parameters.
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class Xs2aTransactionParameters extends Xs2aWithBalanceParameters {
+    private static final String PAGE_INDEX_QUERY_PARAMETER_NAME = "pageIndex";
+    private static final String PAGE_SIZE_QUERY_PARAMETER_NAME = "itemsPerPage";
+
+    /**
+     * Transaction booking status - i.e. PENDING/BOOKED.
+     */
+    @ValidationInfo(ui = @FrontendCode(STRING), ctx = @ContextCode(BOOKING_STATUS))
+    @NotBlank(message = "{no.ctx.bookingStatus}")
+    private String bookingStatus;
+
+    /**
+     * Transaction list date from.
+     */
+    @NotNull(message = "{no.ctx.dateFrom}")
+    private LocalDate dateFrom;
+
+    /**
+     * Transaction list date to.
+     */
+    @NotNull(message = "{no.ctx.dateTo}")
+    private LocalDate dateTo;
+
+    /**
+     * Result page number.
+     */
+    @Nullable
+    private Integer page;
+
+    /**
+     * Records per page.
+     */
+    @Nullable
+    private Integer pageSize;
+
+    // TODO - MapStruct?
+    @Override
+    public RequestParams toParameters() {
+        var requestParamsMap = RequestParams.builder()
+                .withBalance(super.getWithBalance())
+                .bookingStatus(bookingStatus)
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .build()
+                .toMap();
+
+        Optional.ofNullable(page).ifPresent(p -> requestParamsMap.put(PAGE_INDEX_QUERY_PARAMETER_NAME, p.toString()));
+        Optional.ofNullable(pageSize).ifPresent(ps -> requestParamsMap.put(PAGE_SIZE_QUERY_PARAMETER_NAME, ps.toString()));
+
+        return RequestParams.fromMap(requestParamsMap);
+    }
+
+    @Mapper(componentModel = SPRING_KEYWORD, implementationPackage = XS2A_MAPPERS_PACKAGE)
+    public interface FromCtx extends DtoMapper<TransactionListXs2aContext, Xs2aTransactionParameters> {
+        Xs2aTransactionParameters map(TransactionListXs2aContext ctx);
+    }
+}

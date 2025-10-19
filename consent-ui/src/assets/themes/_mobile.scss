@@ -1,0 +1,26 @@
+$BROWSER_VIEWPOINT: 100vh;
+
+@media (min-width: 768px) {
+  .fix-width {
+    max-width: 24rem;
+    min-width: 24rem;
+  }
+
+  .h-md-100 {
+    min-height: $BROWSER_VIEWPOINT;
+  }
+}
+
+@media (max-width: 576px) {
+  button {
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .icons {
+    &--big {
+      width: 4rem;
+      height: 4rem;
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "extras": {
+    "PSU_ID": "anton.brueckner"
+  },
+  "consentAuth": {
+    "consent": {
+      "recurringIndicator": true,
+      "combinedServiceIndicator": false,
+      "access": {
+        "transactions": [
+          {
+            "iban": "DE80760700240271232400",
+            "currency": "EUR"
+          }
+        ]
+      },
+      "frequencyPerDay": 12,
+      "validUntil": "2030-01-31"
+    }
+  }
+}

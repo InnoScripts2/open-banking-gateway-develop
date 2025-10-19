@@ -1,0 +1,131 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/open_banking?currentSchema=banking_protocol
+    username: postgres
+    password: docker
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      schema: banking_protocol
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: de.adorsys.opba.db.hibernate.PrefixAndSnakeCasePhysicalNamingStrategy
+      # DDL is handled by Liquibase
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:migration/master.xml
+    parameters:
+      table-prefix: opb_
+
+facade:
+  urls:
+    embedded-ui-base-url: http://localhost:4200
+    # Datasafe security configuration
+    datasafe:
+      # Which keystore to use and how to encrypt keys in it
+      key-store:
+        type: BCFKS
+        encryption-algo: AES256_KWP
+        pbkdf:
+          pbkdf2:
+            algo: PRF_SHA512
+            saltLength: 16
+            iterCount: 10240
+        mac-algo: HmacSHA3_512
+        password-keys-algo: PBEWithHmacSHA256AndAES_128
+      # Which keys to create in keystore
+      keys:
+        enc-key-number: 1
+        sign-key-number: 1
+        # Secret key creation
+        secret:
+          algo: AES
+          size: 128
+        # Encrypting key creation
+        encrypting:
+          algo: RSA
+          size: 2048
+          sig-algo: SHA256withRSA
+        # Signing key creation
+        signing:
+          algo: RSA
+          size: 2048
+          sig-algo: SHA256withRSA
+      # How to encrypt documents
+      cms:
+        algo: AES128_GCM
+
+protocol:
+  xs2a:
+    urls:
+      ais:
+        to-aspsp: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.to-aspsp}
+        web-hooks:
+          ok: ${facade.urls.embedded-ui-base-url}/ais/{authSessionId}/restore-session/{aspspRedirectCode}/ok
+          nok: ${facade.urls.embedded-ui-base-url}/ais/{authSessionId}/restore-session/{aspspRedirectCode}/nok
+          result: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.web-hooks.result}
+        parameters:
+          provide-more: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.provide-more}
+          provide-psu-password: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.provide-psu-password}
+          select-sca-method: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.select-sca-method}
+          report-sca-result: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.report-sca-result}
+          provide-psu-iban: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.provide-psu-iban}
+          wait-decoupled-sca: ${facade.urls.embedded-ui-base-url}/ais${protocol.xs2a.urls.common.parameters.wait-decoupled-sca}
+      pis:
+        to-aspsp: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.to-aspsp}
+        web-hooks:
+          ok: ${facade.urls.embedded-ui-base-url}/pis/{authSessionId}/restore-session?state=ok&aspspRedirectCode={aspspRedirectCode}
+          nok: ${facade.urls.embedded-ui-base-url}/pis/{authSessionId}/restore-session?state=nok&aspspRedirectCode={aspspRedirectCode}
+          result: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.web-hooks.result}
+        parameters:
+          provide-more: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.provide-more}
+          provide-psu-password: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.provide-psu-password}
+          select-sca-method: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.select-sca-method}
+          report-sca-result: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.report-sca-result}
+          provide-psu-iban: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.provide-psu-iban}
+          wait-decoupled-sca: ${facade.urls.embedded-ui-base-url}/pis${protocol.xs2a.urls.common.parameters.wait-decoupled-sca}
+      common:
+        to-aspsp: /{authSessionId}/to-aspsp-redirection?redirectCode={redirectCode}
+        web-hooks:
+          result: /{authSessionId}/consent-result?redirectCode={redirectCode}
+        parameters:
+          provide-more: /{authSessionId}?redirectCode={redirectCode}
+          provide-psu-password: /{authSessionId}/authenticate?wrong={isWrongCreds}
+          select-sca-method: /{authSessionId}/select-sca-method
+          report-sca-result: /{authSessionId}/sca-result/{selectedScaType}?wrong={isWrongCreds}
+          provide-psu-iban: /{authSessionId}/entry-consent-transactions/dedicated-account-access?wrong={isWrongCreds}
+          wait-decoupled-sca: /{authSessionId}/wait-sca-finalization?redirectCode={redirectCode}
+    aspspmessages:
+      invalid-credentials: PSU_CREDENTIALS_INVALID
+      invalid-consent: FORMAT_ERROR
+      missing-oauth2-token: TOKEN_INVALID
+      missing-oauth2-token-message: Please retrieve token first
+      consent-gone:
+        ACCESS_EXCEEDED: CONSENT_ACCESS_EXCEEDED_LIMIT
+        CONSENT_UNKNOWN: CONSENT_UNKNOWN
+        CONSENT_EXPIRED: CONSENT_EXPIRED
+        CONSENT_INVALID: CONSENT_INVALID
+    pkcs12:
+      keystore: sample-qwac.keystore
+      password: password
+
+# Flowable comes for all protocols shared
+bpmnshared:
+  flowable:
+    serialization:
+      serialize-only-packages:
+        - de.adorsys.opba.protocol.bpmnshared.dto.context
+        - de.adorsys.opba.protocol.xs2a.context
+        - de.adorsys.opba.protocol.hbci.context
+    expirable:
+      expire-after-write: PT600S
+    # TODO: re-enable retry after proper error handling implementation
+    number-of-retries: 0
+flowable:
+  process-definition-location-prefix: classpath*:/processes/**/

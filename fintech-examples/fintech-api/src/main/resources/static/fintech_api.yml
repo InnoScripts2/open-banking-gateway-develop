@@ -1,0 +1,2142 @@
+openapi: 3.0.1
+
+info:
+  version: "1.0.0"
+  title: Open Banking Gateway FinTech Example API
+  description: |
+    This is a sample API that shows how to develop FinTech use cases that invoke banking APIs.
+
+    #### User Agent and Cookies
+    This Api assumes
+    * that the PsuUserAgent (hosting the FinTechUI) is a modern web browser that stores httpOnly cookies sent with the redirect under the given domain and path as defined by [RFC 6265](https://tools.ietf.org/html/rfc6265).
+    * that any other PsuUserAgent like a native mobile or a desktop application can simulate this same behavior of a modern browser with respect to Cookies.
+
+    #### SessionCookies and XSRF
+    After a PSU is authenticated with the FinTech environment (either through the simple login interface defined here, or through an identity provider),
+    the FinTechApi will establish a session with the FinTechUI. This is done by the mean of using a cookie called SessionCookie.
+    This SessionCookie is protected by a corresponding xsrfToken. The response that sets a SessionCookie also carries a corresponding xsrfToken in the response header named "X-XSRF-TOKEN".
+
+    It is the responsibility of the FinTechUI to :
+    * parse and store this xsrfToken so that a refresh of a browser window can work. This shall be done using user agent capabilities.
+    A web browser application might decide to store the xsrfToken in the browser localStorage, as the cookie we set are all considered persistent.
+    * make sure that each subsequent request that is carrying the SessionCookie also carries the corresponding xsrfToken as header field (see the request path).
+    * remove this xsrfToken from the localStorage when the corresponding SessionCookie is deleted by a server response (setting cookie value to null).
+
+    The main difference between an xsrfToken and a SessionCookie is that the sessionCookie is automatically sent with each matching request. The xsrfToken must be explicitely read and sent by application.
+
+    #### API- vs. UI-Redirection
+    For simplicity, this Framework is designed to redirect to FinTechUI not to FinTechApi.
+
+    #### Explicite vs. Implicite Redirection
+    We define an "Implicite redirection" a case where a web browser react to 30X reponse and automatically redirects to the attached endpoint. We define an
+    "Explicite Redirection" as a case where the UI-Application reacts to a 20X response, explicitely parses the attached __Location__ header an uses it to reload
+    the new page in the browser window (or start the new UI-Application in case of native apps).
+
+    This framework advocates for explicite redirection passing a __20X__ response to the FinTechUI toghether with the __Location__ parameter.
+
+    Processing a response that initiates a redirect, the FinTechUI makes sure following happens,
+    * that the exisitng __SessionCookie__ is deleted, as the user will not have a chance for an explicite logout,
+    * that the corresponding xsrfToken is deleted from the local storage,
+    * that a RedirectCookie set is stored (in case UI is not a web browser), so the user can be authenticated against it when sent back to the FinTechUI. The expiration of the RedirectCookie shall be set to the expected duration of the redirect,
+    * that the corresponding xsrfToken is stored in the local storage (under the same cookie path as the RedirectCookie)
+
+    #### Redirecting to the ConsentAuthorisationApi
+    For a redirection to the ConsentAuthorisationApi, a generated AUTH-ID is added to the cookie path and used to distinguish authorization processes from each order.
+    This information (AUTH-ID) must be contained in the back redirect url sent to the ConsentAuthorisationApi in the back channel, so that the FinTechUI can invoke
+    the correct code2Token endpoint when activated.
+
+externalDocs:
+  url: "https://adorsys.github.io/open-banking-gateway"
+  x-termsOfService: urn:tos
+  x-contact: {}
+  x-license:
+    name: Affero GNU General Public License v.3
+    url: https://www.gnu.org/licenses/agpl-3.0.txt
+  x-version: "1.0"
+
+tags:
+  - name: FinTechAuthorization
+    description: Example Financial web service provided by the FinTech.
+  - name: FinTechBankSearch
+    description: Example bank search funtionality fro the perspective of a FinTech.
+  - name: FinTechAccountInformation
+    description: Example Account Information Service as defined by a FinTechApi.
+
+paths:
+  /v1/login:
+    post:
+      tags:
+        - FinTechAuthorization
+      operationId: loginPOST
+      summary: Identifies the PSU in the Realm of the FinTechApi.
+      description: |
+        Simple login interface used to establish a session between
+        PSU and FinTech. Real application will delegate login to an oAuth2
+        Identity provider.
+      parameters:
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+      requestBody:
+        description: Login request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/loginRequest"
+        required: true
+      x-codegen-request-body-name: loginRequest
+      responses:
+        "200":
+          $ref: "#/components/responses/200_UserProfile"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+  /v1/login/oauth2:
+    get:
+      tags:
+        - FinTechAuthorization
+      operationId: callbackGetLogin
+      summary: Oauth2 callback to identify user.
+      description: |
+        Oauth2 callback to authenticate user using some Oauth2 identity provider account. Provider id is set inside state.
+      parameters:
+        #query
+        - name: code
+          in: query
+          required: true
+          description: OAuth2 redirect code
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: OAuth2 redirect state
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: true
+          description: OAuth2 requested scope
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          description: OAuth2 error
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/200_UserProfile"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+  /v1/oauth2/{idpProvider}/login:
+    post:
+      tags:
+        - FinTechOauth2Authentication
+      operationId: oauthLoginPOST
+      summary: Identifies the PSU in the Realm of the FinTechApi using his Gmail or other IDP provider account.
+      description: |
+        Use Oauth2 for Gmail users' account to identify him
+      parameters:
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        # path
+        - in: path
+          name: idpProvider
+          schema:
+            type: string
+            enum: [gmail]
+          required: true
+          description: IDP provider id for Oauth2 authentication (i.e. `gmail`)
+      responses:
+        "202":
+          $ref: "#/components/responses/202_ToOauth2"
+
+  /v1/logout:
+    post:
+      tags:
+        - FinTechAuthorization
+      operationId: logoutPOST
+      summary: logs out user
+      description: If user can be authenticated, user will be logged out.
+      parameters:
+        #headers
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: nothing returned
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+  /v1/search/bankSearch:
+    get:
+      tags:
+        - FinTechBankSearch
+      operationId: bankSearchGET
+      summary: Issues an incremental bank search request to the FinTechApi.
+      description: Issues an incremental bank search request to the FinTechApi.
+      parameters:
+        #headers
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+        #query
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: max
+          in: query
+          required: false
+          schema:
+            type: integer
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          $ref: "#/components/responses/200_BankSearchResult"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+  /v1/search/bankProfile:
+    get:
+      tags:
+        - FinTechBankSearch
+      summary: Request the profile of the bank identified with id (bankProfileId).
+      description: Request the profile of the bank identified with id (bankProfileId).
+      operationId: bankProfileGET
+      parameters:
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+        - name: bankProfileId
+          in: query
+          description: Identifier of the bank to be loaded.
+          required: true
+          schema:
+            type: string
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          $ref: "#/components/responses/200_BankProfile"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/search/bankInfo:
+    post:
+      tags:
+        - FinTechIbanSearch
+      operationId: getBankInfoByIban
+      summary: Retrieves bank metadata using an IBAN
+      description: |
+        Takes an IBAN and returns metadata such as bank name, bank code, and BIC.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - iban
+              properties:
+                iban:
+                  type: string
+                  description: International Bank Account Number to be used for the bank information lookup.
+                  example: "DE89370400440532013000"
+      parameters:
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+      security:
+        - sessionCookie: [ ]
+      responses:
+        "200":
+          description: Bank metadata for the given IBAN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InlineResponseBankInfo"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/ais/banks/{bank-id}/accounts:
+    get:
+      tags:
+        - FinTechAccountInformation
+      operationId: aisAccountsGET
+      summary: Provides list of available accounts for the given bank
+      description: |
+        Read the identifiers of the available payment accounts.
+
+        If required by the bank, PSU consent will be obtained before returning
+        the list of bank accounts.
+
+        Returns all identifiers of the accounts, to which an account access has
+        been granted to by the PSU. In addition, relevant information about the
+        accounts and hyperlinks to corresponding account information resources
+        are provided if a related consent has been already granted.
+      parameters:
+        #path
+        - $ref: "#/components/parameters/bank-id"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+        - $ref: "#/components/parameters/X-Psu-Authentication-Required"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-OK"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-NOK"
+        - $ref: "#/components/parameters/LoARetrievalInformation"
+        - $ref: "#/components/parameters/X-Create-Consent-If-None"
+        - $ref: "#/components/parameters/Fintech-Decoupled-Preferred"
+        - $ref: "#/components/parameters/Fintech-Brand-Logging-Information"
+        - $ref: "#/components/parameters/Fintech-Notification-URI"
+        - $ref: "#/components/parameters/Fintech-Redirect-Notification-Content-Preferred"
+        #query
+        - $ref: "#/components/parameters/withBalance"
+        - $ref: "#/components/parameters/online"
+
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          $ref: "#/components/responses/200_AccountList"
+        "202":
+          $ref: "#/components/responses/202_ToConsentAuthApi"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/ais/banks/{bank-id}/accounts/{account-id}/transactions:
+    get:
+      tags:
+        - FinTechAccountInformation
+      operationId: aisTransactionsGET
+      summary: Returns the list of transactions of the given account
+      description: Returns the list of transactions of the given account.
+      parameters:
+        #path
+        - $ref: "#/components/parameters/bank-id"
+        - $ref: "#/components/parameters/account-id"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+        - $ref: "#/components/parameters/X-Psu-Authentication-Required"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-OK"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-NOK"
+        - $ref: "#/components/parameters/LoTRetrievalInformation"
+        - $ref: "#/components/parameters/X-Create-Consent-If-None"
+        #query
+        - $ref: "#/components/parameters/dateFrom"
+        - $ref: "#/components/parameters/dateTo"
+        - $ref: "#/components/parameters/entryReferenceFrom"
+        - $ref: "#/components/parameters/bookingStatus"
+        - $ref: "#/components/parameters/deltaList"
+        - $ref: "#/components/parameters/online"
+
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          $ref: "#/components/responses/200_AccountsTransactions"
+        "202":
+          $ref: "#/components/responses/202_ToConsentAuthApi"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/{auth-id}/fromConsent/{ok-or-notok}:
+    get:
+      tags:
+        - FinTechAuthorization
+      operationId: fromConsentGET
+      summary: Entry point when PSU is redirected back from ConsentAuthorisationApi to the FinTechUI.
+      description: |
+        Entry point when PSU is redirected back from ConsentAuthorisationApi to the FinTechUI.
+      parameters:
+        #path
+        - $ref: "#/components/parameters/auth-id"
+        - $ref: "#/components/parameters/ok-or-notok"
+        #query
+        - $ref: "#/components/parameters/redirectCode"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+      security:
+        - redirectCookie: []
+      responses:
+        "202":
+          $ref: "#/components/responses/202_ReloadUI"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/{auth-id}/fromPayment/{ok-or-notok}:
+    get:
+      tags:
+        - FinTechAuthorization
+      operationId: fromPaymentGET
+      summary: Entry point when PSU is redirected back from ConsentAuthorisationApi to the FinTechUI.
+      description: |
+        Entry point when PSU is redirected back from ConsentAuthorisationApi to the FinTechUI.
+      parameters:
+        #path
+        - $ref: "#/components/parameters/auth-id"
+        - $ref: "#/components/parameters/ok-or-notok"
+        #query
+        - $ref: "#/components/parameters/redirectCode"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+      security:
+        - redirectCookie: []
+      responses:
+        "202":
+          $ref: "#/components/responses/202_ReloadUI"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/pis/banks/{bank-id}/accounts/{account-id}/payments/single:
+    get:
+      summary: Ask for all payments of this account
+      description: This method is used to get payment status.
+      operationId: retrieveAllSinglePayments
+      tags:
+        - FintechRetrieveAllSinglePayments
+      parameters:
+        #path
+        - $ref: "#/components/parameters/bank-id"
+        - $ref: "#/components/parameters/account-id"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/200_PaymentInitiationStatusResponseList"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+    post:
+      summary: Single payment initiation request
+      description: This method is used to initiate a payment at the Fintech Server.
+      operationId: initiateSinglePayment
+      tags:
+        - FintechSinglePaymentInitiation
+      parameters:
+        #path
+        - $ref: "#/components/parameters/bank-id"
+        - $ref: "#/components/parameters/account-id"
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+        - $ref: "#/components/parameters/X-Psu-Authentication-Required"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-OK"
+        - $ref: "#/components/parameters/Fintech-Redirect-URL-NOK"
+        - $ref: "#/components/parameters/Fintech-Decoupled-Preferred"
+        - $ref: "#/components/parameters/Fintech-Brand-Logging-Information"
+        - $ref: "#/components/parameters/Fintech-Notification-URI"
+        - $ref: "#/components/parameters/Fintech-Redirect-Notification-Content-Preferred"
+
+      requestBody:
+        description: Single payment initiation request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/singlePaymentInitiationRequest"
+        required: true
+      responses:
+        "202":
+          $ref: "#/components/responses/202_ToConsentAuthApi"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+
+  /v1/ais/banks/{bank-id}/consents:
+    delete:
+      tags:
+        - FinTechAccountInformation
+      operationId: aisConsentsDELETE
+      summary: Deletes all consents that are associated with bank
+      description: Deletes all consents that are associated with bank
+      parameters:
+        #path
+        - $ref: "#/components/parameters/bank-id"
+
+        #header
+        - $ref: "#/components/parameters/X-Request-ID"
+        - $ref: "#/components/parameters/X-XSRF-TOKEN"
+
+      security:
+        - sessionCookie: [ ]
+      responses:
+        "200":
+          $ref: "#/components/responses/200_ConsentRemovalResult"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+
+  /v1/consent/{userid}/{password}:
+    get:
+      summary: ask for existing consent of user
+      description: This method is disabled by default. It can be enabled by profile "CONSENT_RETRIEVAL"
+      operationId: retrieveConsent
+      tags:
+        - FintechRetrieveConsent
+      parameters:
+        #path
+        - name: userid
+          in: path
+          schema:
+            type: string
+        - name: password
+          in: path
+          schema:
+            type: string
+
+      responses:
+        "200":
+          $ref: "#/components/responses/200_ConsentRetrievalResult"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sessionCookie
+      description: >
+        This is the SessionCookie used to maintain the login session
+        between the FinTechUI and the FinTechApi. If this cookie is set, the
+        response of the LoginRequest will contain a required X-XSRF-TOKEN header
+        used later to check the cookie agains CSRF.
+
+  headers:
+    Set-SessionCookie:
+      name: Set-Cookie
+      description: |
+        SessionCookie used to maintain the login session between the FinTechUI and the FinTechApi.
+        This cookie is validated using an X-XSRF-TOKEN sent with the request header.
+        This cookie must contain a hash reference to the corresponding XSRF-TOKEN -> hash(XSRF-TOKEN).
+        So in order to verify that the request originate from the FinTechUI application, a server
+        component will hash the given XSRF-TOKEN and compare it with the result in the cookie.
+
+        Remember  that the XSRF-TOKEN value must be extracted from the request parameter named X-XSRF-TOKEN
+        and not from a cookie header. This is important to mention as some implementation might return the
+        XSRF-TOKEN to the FinTechUI in form of a cookie.
+      schema:
+        type: string
+        example: Session=ejxs.wersdzxxc23r.asdf; Path=/
+
+    Set-RedirectCookie:
+      name: Set-Cookie
+      description: |
+        Cookie set before redirecting PSU
+      schema:
+        type: string
+        example: |
+          "RedirectSession=ejxs.wersdzxxc23r.asdf; Path=/"
+
+    Reset-Cookies:
+      name: Set-Cookie
+      description: |
+        Delete all relevant cookies
+      schema:
+        type: string
+        example: |
+          "RedirectSession=null; Path=/; Max-Age=0, Session=null; Path=/; Max-Age=0"
+
+    X-Request-ID:
+      name: X-Request-ID
+      required: true
+      description: >
+        Unique ID that identifies this request through common workflow.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    X-XSRF-TOKEN:
+      required: true
+      description: |
+        XSRF parameter used to validate a SessionCookie. This token is produced by the FinTechAPI by either
+        * Storing a hash value of the XSRF-TOKEN in the SessionCookie or
+        * Using the XSRF-TOKEN to encrypt the content of the SessionCookie.
+
+        The XSRF-TOKEN is returned to the FinTechUI as a response header with the header value X-XSRF-TOKEN.
+        It is the responsibility of the FinTechUI will take care of ensuring the persistence of the XSRF-TOKEN.
+      example: faadsf93nlas32wx
+      schema:
+        type: string
+
+    Location-Consent-Auth:
+      name: Location
+      description: |
+        This is the 202 Location Header. It contains a redirect link for
+        the /auth endpoint of the ConsentAuthorisationApi. This link must
+        contain a redirectCode as a query parameter.
+      schema:
+        type: string
+        example: http://localhost:8083/consent/auth?redirectCode=ejxs.wersdzxxc23r.asdf
+
+    Location-Oauth2-Auth:
+      name: Location
+      description: |
+        This is the 202 Location Header. It contains a redirect link for Oauth2
+      schema:
+        type: string
+        example: http://localhost:8083/consent/auth?redirectCode=ejxs.wersdzxxc23r.asdf
+
+    Location-FinTechUI:
+      name: Location
+      description: |
+        Entry point for loading the FinTechUI. This is generaly invoked when another application redirects an authenticated
+        user to the FinTechUI. The FinTechUI after a reload must load the xsrfToken from the localStorage and invoke the
+        /v1/{auth-id}/fromConsent/{ok-or-notok} endpoint of the FinTechAPI
+      schema:
+        type: string
+        example: http://localhost:8080/finTechUi?sessionState=ejxs.wersdzxxc23r.asdf
+
+  parameters:
+    Fintech-Redirect-URL-OK:
+      # the description must not be added. currently fintech-ui codegenerate fails, if non-standard-header field has description
+      #    -attribute components.parameters.Fintech-Redirect-URL-OK.[Fintech-Redirect-URL-OK].desription is unexpected
+      name: Fintech-Redirect-URL-OK
+      required: true
+      in: header
+      schema:
+        type: string
+      example: "https://example.com/myservice?auth-id=sf3x;authResult=success"
+
+    Fintech-Redirect-URL-NOK:
+      # the description must not be added. currently fintech-ui codegenerate fails, if non-standard-header field has description
+      #    -attribute components.parameters.Fintech-Redirect-URL-NOK.[Fintech-Redirect-URL-NOK].desription is unexpected
+      name: Fintech-Redirect-URL-NOK
+      required: true
+      in: header
+      schema:
+        type: string
+      example: "https://example.com/myservice?auth-id=sf3x;authResult=failure"
+
+    Fintech-Decoupled-Preferred:
+      name: Fintech-Decoupled-Preferred
+      required: false
+      in: header
+      schema:
+        type: boolean
+
+    Fintech-Brand-Logging-Information:
+      name: Fintech-Brand-Logging-Information
+      required: false
+      in: header
+      schema:
+        type: string
+
+    Fintech-Notification-URI:
+      name: Fintech-Notification-URI
+      required: false
+      in: header
+      schema:
+        type: string
+
+    Fintech-Redirect-Notification-Content-Preferred:
+      name: Fintech-Redirect-Notification-Content-Preferred
+      required: false
+      in: header
+      schema:
+        type: string
+
+    LoARetrievalInformation:
+      name: LoARetrievalInformation
+      required: true
+      in: header
+      schema:
+        type: string
+        enum:
+          - "FROM_TPP_WITH_AVAILABLE_CONSENT"
+          - "FROM_TPP_WITH_NEW_CONSENT"
+
+    LoTRetrievalInformation:
+      name: LoTRetrievalInformation
+      required: true
+      in: header
+      schema:
+        type: string
+        enum:
+          - "FROM_TPP_WITH_AVAILABLE_CONSENT"
+          - "FROM_TPP_WITH_NEW_CONSENT"
+
+    X-Create-Consent-If-None:
+      name: X-Create-Consent-If-None
+      required: false
+      in: header
+      schema:
+        type: string
+        description: json representation of AisConsentRequest object
+        example: {"access":{"allPsd2":"ALL_ACCOUNTS_WITH_BALANCES"},"frequencyPerDay":4,"validUntil":"2021-06-18","recurringIndicator":true,"combinedServiceIndicator":false}
+
+    X-Request-ID:
+      name: X-Request-ID
+      in: header
+      required: true
+      description: |
+        Unique ID that identifies this request through common workflow. Must be
+        contained in HTTP Response as well.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    X-Ais-Psu-Authentication-Required:
+      name: X-Ais-Psu-Authentication-Required
+      in: header
+      description: |
+        If false, login form to OPBA will not be displayed, so
+        that authentication is not necessary. If absent or true - login form for consents will be displayed.
+      example: "true"
+      schema:
+        type: boolean
+        default: "true"
+
+    X-Psu-Authentication-Required:
+      name: X-Psu-Authentication-Required
+      in: header
+      description: |
+        If false, login form to OPBA will not be displayed as there might be nothing to share for payments, so
+        that authentication is not necessary. If absent or true - login form for payments will be displayed.
+      example: "true"
+      schema:
+        type: boolean
+        default: "false"
+
+    X-XSRF-TOKEN:
+      name: X-XSRF-TOKEN
+      in: header
+      required: true
+      description: |
+        XSRF parameter used to validate a SessionCookie or RedirectCookie.
+      example: faadsf93nlas32wx
+      schema:
+        type: string
+
+    auth-id:
+      name: auth-id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    ok-or-notok:
+      name: ok-or-notok
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - "OK"
+          - "NOT_OK"
+
+    redirectCode:
+      name: redirectCode
+      in: query
+      required: true
+      schema:
+        type: string
+
+    bank-id:
+      name: bank-id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    account-id: # the account id is NOT the iban
+      name: account-id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    withBalance:
+      name: withBalance
+      in: query
+      description: Provides balances for the given accounts
+      schema:
+        type: boolean
+
+    bookingStatus:
+      name: bookingStatus
+      in: query
+      description: |
+        Permitted codes are
+          * "booked",
+          * "pending" and
+          * "both"
+        To support the "pending" and "both" feature is optional for the ASPSP,
+        Error code if not supported in the online banking frontend
+        Default is "booked"
+      required: false
+      schema:
+        type: string
+        enum:
+          - "booked"
+          - "pending"
+          - "both"
+
+    dateFrom:
+      name: dateFrom
+      in: query
+      description: |
+        Conditional: Starting date (inclusive the date dateFrom) of the transaction list, mandated if no delta access is required.
+
+        For booked transactions, the relevant date is the booking date.
+
+        For pending transactions, the relevant date is the entry date, which may not be transparent
+        neither in this API nor other channels of the ASPSP.
+      required: false
+      schema:
+        type: string
+        format: date
+
+    dateTo:
+      name: dateTo
+      in: query
+      description: |
+        End date (inclusive the data dateTo) of the transaction list, default is "now" if not given.
+
+        Might be ignored if a delta function is used.
+
+        For booked transactions, the relevant date is the booking date.
+
+        For pending transactions, the relevant date is the entry date, which may not be transparent
+        neither in this API nor other channels of the ASPSP.
+
+      required: false
+      schema:
+        type: string
+        format: date
+
+    deltaList:
+      name: deltaList
+      in: query
+      description: |
+        This data attribute is indicating that the AISP is in favour to get all transactions after the last report access
+        for this PSU on the addressed account.
+        This is another implementation of a delta access-report.
+
+        This delta indicator might be rejected by the ASPSP if this function is not supported.
+
+        Optional if supported by API provider
+      schema:
+        type: boolean
+
+    entryReferenceFrom:
+      name: entryReferenceFrom
+      in: query
+      description: |
+        This data attribute is indicating that the AISP is in favour to get all transactions after
+        the transaction with identification entryReferenceFrom alternatively to the above defined period.
+        This is a implementation of a delta access.
+        If this data element is contained, the entries "dateFrom" and "dateTo" might be ignored by the ASPSP
+        if a delta report is supported.
+
+        Optional if supported by API provider.
+      required: false
+      schema:
+        type: string
+
+    online:
+      name: online
+      in: query
+      description: |
+        If true, new data will be requested and cache will be updated
+      example: "false"
+      schema:
+        type: boolean
+        default: "true"
+
+  responses:
+    200_PaymentInitiationStatusResponseList:
+      description: List of all payments done from fintech
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/paymentInitiationWithStatusResponse"
+
+    200_UserProfile:
+      description: |
+        The user profile object. Contains information needed to present some
+        sort of dashboard to the user.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              userProfile:
+                $ref: "#/components/schemas/userProfile"
+
+    200_BankSearchResult:
+      description: The result of a bank search.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              bankDescriptor:
+                type: array
+                items:
+                  $ref: "#/components/schemas/bankDescriptor"
+              keyword:
+                type: string
+              start:
+                type: integer
+              max:
+                type: integer
+              total:
+                type: integer
+
+    200_BankProfile:
+      description: Response containing the service profile of a bank.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              bankProfile:
+                $ref: "#/components/schemas/bankProfile"
+
+    200_AccountList:
+      description: Response containing the list of bank accounts.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/accountList"
+
+    200_AccountsTransactions:
+      description: Response with transactions for given account
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/transactionsResponse"
+
+    202_ToConsentAuthApi:
+      description: Redirects UserAgent to the ConsentAuthorisationApi.
+      headers:
+        Location:
+          $ref: "#/components/headers/Location-Consent-Auth"
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-RedirectCookie"
+          description: |
+            Here the cookie set is called a RedirectCookie. Looks like
+            RDC=ejts.adsfa.adfaj; Path=/v1/XYZ/fromConsent. In the case XYZ is the
+            auth used to keep track of different RDCs. As a user can
+            initiate more than one sca from one browser instance.
+            * Note that the path of the RDC is Path=/v1/XYZ/fromConsent/.
+            * So RDC are only sent to the server when a callback link
+              commes from the ConsentAuthorisationApi
+            * Also note that the callback link hast the structure
+              /v1/fromConsent?authId=auth-id; where the
+              auth-id is a simple random string (XYZ). The corresponding xsrfToken
+              can be stored in the local storage under the path /v1/XYZ/fromConsent.
+            * The callback link is not part of the location link. It is passed to
+            the ConsentAuthorisationApi through the ConsentSession shared in the
+            backend (BankingProtocol).
+            * RedirectCookie has an expiration date after which no callback
+            will be accepted from the ConsentAuthorisationApi anyway.
+
+    202_ToOauth2:
+      description: |
+        Request to perform Oauth2 authentication
+      headers:
+        Location:
+          $ref: "#/components/headers/Location-Oauth2-Auth"
+
+    202_ReloadUI:
+      description: |
+        Request reload of a designated page of the FinTechUI. Reloaded UI will use
+        stored xsrfToken/SessionCookie.
+
+      headers:
+        Location:
+          $ref: "#/components/headers/Location-FinTechUI"
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+
+    400_BadRequest:
+      description: Bad request
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/psuMessage"
+
+    401_Unauthorized:
+      description: |
+        Access credentials absent or invalid. This happens when
+        * Provided credential for login not matching.
+        * Endpoin expect a session cookie but none is present.
+        * Session cookie is present but associated stateString does not match.
+
+        As a consequence, we reset existing FinTechLoginSessionState if any.
+        Nevertheless we do not reset RedirectSessionCookie.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        Set-Cookie:
+          $ref: "#/components/headers/Reset-Cookies"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponse"
+
+    404_NotFound:
+      description: The specified resource was not found
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/X-Request-ID"
+        X-XSRF-TOKEN:
+          $ref: "#/components/headers/X-XSRF-TOKEN"
+        Set-Cookie:
+          $ref: "#/components/headers/Set-SessionCookie"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/psuMessage"
+
+    200_ConsentRetrievalResult:
+      description: List of all consents for all banks of user
+      content:
+        application/json:
+          schema:
+            type: object
+
+    200_ConsentRemovalResult:
+      description: List of all removed consents
+      content:
+        application/json:
+          schema:
+            type: object
+
+  schemas:
+    paymentInitiationWithStatusResponse:
+      description: response from open banking gateway
+      type: object
+      required:
+        - debtorAccount
+        - instructedAmount
+        - creditorAccount
+        - creditorName
+      properties:
+        endToEndIdentification:
+          type: string
+          maxLength: 35
+        debtorAccount:
+          $ref: "#/components/schemas/accountReference"
+        instructedAmount:
+          $ref: "#/components/schemas/amount"
+        creditorAccount:
+          $ref: "#/components/schemas/accountReference"
+        creditorAgent:
+          $ref: "#/components/schemas/bicfi"
+        creditorName:
+          $ref: "#/components/schemas/creditorName"
+        creditorAddress:
+          $ref: "#/components/schemas/address"
+        remittanceInformationUnstructured:
+          $ref: "#/components/schemas/remittanceInformationUnstructured"
+        transactionStatus:
+          $ref: "#/components/schemas/transactionStatus"
+        initiationDate:
+          type: string
+          format: date
+
+    InlineResponseBankInfo:
+      type: object
+      description: |
+        Contains metadata about a bank, as determined from a provided IBAN. 
+        Used to display or verify bank details in client applications.
+      required:
+        - bankCode
+        - bankName
+        - bic
+        - uuid
+      properties:
+        bankName:
+          type: string
+          description: The full legal name of the bank as registered with financial authorities.
+        bankCode:
+          type: string
+          description: The national code used to identify the bank (e.g., Commerzbank in Germany).
+        bic:
+          type: string
+          description: The Bank Identifier Code (BIC), sometimes called SWIFT code, used for international transfers.
+        uuid:
+          type: string
+          description: A unique identifier assigned to this record in the system, for auditing and reference purposes.
+
+    transactionStatus:
+      description: The transaction status
+      type: string
+
+    # Technical data for sessionState and errorResponse
+    sessionState:
+      title: SessionState
+      type: string
+      description: This is the CSRF-State String for the FinTechLoginSessionCookie.
+
+    errorResponse:
+      title: ErrorResponse
+      type: object
+      properties:
+        sessionState:
+          $ref: "#/components/schemas/sessionState"
+        psuMessages:
+          type: array
+          items:
+            $ref: "#/components/schemas/psuMessage"
+    psuMessage:
+      title: PsuMessage
+      type: object
+      required:
+        - category
+        - code
+      properties:
+        category:
+          type: string
+          enum:
+            - ERROR
+            - WARNING
+            - INFO
+        code:
+          type: string
+        path:
+          type: string
+        text:
+          type: string
+
+    # Single Paymement Initiation
+    singlePaymentInitiationRequest:
+      title: Single Paymement Initiation
+      type: object
+      required:
+        - name
+        - creditorIban
+        - debitorIban
+        - amount
+      properties:
+        name:
+          type: string
+        creditorIban:
+          type: string
+        debitorIban:
+          type: string
+        amount:
+          type: string
+        purpose:
+          type: string
+        endToEndIdentification:
+          type: string
+        instantPayment:
+          type: boolean
+
+    # Login
+    loginRequest:
+      title: Login Request
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    userProfile:
+      title: User Profile
+      type: object
+      properties:
+        name:
+          type: string
+        lastLogin:
+          type: string
+          format: date-time
+
+    # Search and bank profile
+    bankDescriptor:
+      title: Bank Descriptor
+      type: object
+      properties:
+        bankName:
+          type: string
+        bic:
+          type: string
+        bankCode:
+          type: string
+        uuid:
+          type: string
+          format: uuid
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/bankProfile"
+
+    bankProfile:
+      title: Bank Profile
+      type: object
+      properties:
+        bankId:
+          type: string
+        bankName:
+          type: string
+        name:
+          type: string
+        bic:
+          type: string
+        uuid:
+          type: string
+          format: uuid
+        services:
+          type: array
+          items:
+            # can be an enum
+            type: string
+        externalId:
+          type: string
+        externalInterfaces:
+          type: string
+        protocolType:
+          type: string
+        isSandbox:
+          type: boolean
+
+    # Account and transaction information
+    accountDetails:
+      description: |
+        The ASPSP shall give at least one of the account reference identifiers:
+          - iban
+          - bban
+          - pan
+          - maskedPan
+          - msisdn
+        If the account is a multicurrency account currency code in "currency" is set to "XXX".
+      type: object
+      required:
+        - currency
+      properties:
+        resourceId:
+          description: This shall be filled, if addressable resource are created by the ASPSP on the /accounts or /card-accounts endpoint.
+          type: string
+        iban:
+          $ref: "#/components/schemas/iban"
+        bban:
+          $ref: "#/components/schemas/bban"
+        pan:
+          $ref: "#/components/schemas/pan"
+        maskedPan:
+          $ref: "#/components/schemas/maskedPan"
+        msisdn:
+          $ref: "#/components/schemas/msisdn"
+        currency:
+          $ref: "#/components/schemas/currencyCode"
+        name:
+          description: Name of the account given by the bank or the PSU in online-banking.
+          type: string
+          maxLength: 35
+        product:
+          description: Product name of the bank for this account, proprietary definition.
+          type: string
+          maxLength: 35
+        cashAccountType:
+          $ref: "#/components/schemas/cashAccountType"
+        status:
+          $ref: "#/components/schemas/accountStatus"
+        bic:
+          $ref: "#/components/schemas/bicfi"
+        linkedAccounts:
+          description: Case of a set of pending card transactions, the APSP will provide the relevant cash account the card is set up on.
+          type: string
+          maxLength: 70
+        usage:
+          description: |
+            Specifies the usage of the account:
+              * PRIV: private personal account
+              * ORGA: professional account
+          type: string
+          maxLength: 4
+          enum:
+            - "PRIV"
+            - "ORGA"
+        details:
+          description: |
+            Specifications that might be provided by the ASPSP:
+              - characteristics of the account
+              - characteristics of the relevant card
+          type: string
+          maxLength: 140
+        _links:
+          $ref: "#/components/schemas/linksAccountDetails"
+        ownerName:
+          description: Name of the legal account owner. If there is more than one owner, then e.g. two names might be noted here.
+          type: string
+          maxLength: 70
+        ownerAddress:
+          $ref: "#/components/schemas/address"
+        balances:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountBalance"
+
+    accountList:
+      description: |
+        List of accounts with details.
+      type: object
+      required:
+        - accounts
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/accountDetails"
+
+    accountReference:
+      description: |
+        Reference to an account by either:
+          * IBAN, of a payment accounts, or
+          * BBAN, for payment accounts if there is no IBAN, or
+          * the Primary Account Number (PAN) of a card, can be tokenised by the ASPSP due to PCI DSS requirements, or
+          * the Primary Account Number (PAN) of a card in a masked form, or
+          * an alias to access a payment account via a registered mobile phone number (MSISDN).
+      type: object
+      properties:
+        iban:
+          $ref: "#/components/schemas/iban"
+        bban:
+          $ref: "#/components/schemas/bban"
+        pan:
+          $ref: "#/components/schemas/pan"
+        maskedPan:
+          $ref: "#/components/schemas/maskedPan"
+        msisdn:
+          $ref: "#/components/schemas/msisdn"
+        currency:
+          $ref: "#/components/schemas/currencyCode"
+
+    accountReport:
+      description: |
+        JSON based account report.
+        This account report contains transactions resulting from the query parameters.
+
+        'booked' shall be contained if bookingStatus parameter is set to "booked" or "both".
+
+        'pending' is not contained if the bookingStatus parameter is set to "booked".
+      type: object
+      required:
+        - _links
+      properties:
+        booked:
+          $ref: "#/components/schemas/transactionList"
+        pending:
+          $ref: "#/components/schemas/transactionList"
+        rawTransactions:
+          description: Raw bank response as String
+          type: string
+
+    analyticsReportDetails:
+      description: |
+        JSON based analytics report.
+        This account report contains transaction categorization result.
+      type: object
+      properties:
+        transactionId:
+          description: The id of transaction this analytics result refers to.
+          type: string
+        mainCategory:
+          description: Main category of the booking.
+          type: string
+        subCategory:
+          description: Sub category of the booking.
+          type: string
+        specification:
+          description: Specification of the booking.
+          type: string
+        otherAccount:
+          description: Related account.
+          type: string
+        logo:
+          description: Logo.
+          type: string
+        homepage:
+          description: Homepage.
+          type: string
+        hotline:
+          description: Hotline.
+          type: string
+        email:
+          description: Email.
+          type: string
+        custom:
+          description: Custom information about analyzed transaction.
+          type: object
+          additionalProperties:
+            type: string
+        usedRules:
+          description: Rules that were used to analyze.
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        nextBookingDate:
+          description: Classification next booking date.
+          type: string
+          format: date
+        cycle:
+          description: Classification cycle result.
+          type: string
+
+    analyticsReport:
+      description: Array of transaction details.
+      type: array
+      items:
+        $ref: "#/components/schemas/analyticsReportDetails"
+
+    accountStatus:
+      description: |
+        Account status. The value is one of the following:
+          - "enabled": account is available
+          - "deleted": account is terminated
+          - "blocked": account is blocked e.g. for legal reasons
+        If this field is not used, than the account is available in the sense of this specification.
+      type: string
+      enum:
+        - "enabled"
+        - "deleted"
+        - "blocked"
+
+    address:
+      type: object
+      required:
+        - country
+      properties:
+        streetName:
+          type: string
+          maxLength: 70
+        buildingNumber:
+          type: string
+        townName:
+          type: string
+        postCode:
+          type: string
+        country:
+          $ref: "#/components/schemas/countryCode"
+      example:
+        {
+          street: "rue blue",
+          buildingnNumber: "89",
+          city: "Paris",
+          postalCode: "75000",
+          country: "FR",
+        }
+
+    amount:
+      type: object
+      required:
+        - currency
+        - amount
+      properties:
+        currency:
+          $ref: "#/components/schemas/currencyCode"
+        amount:
+          $ref: "#/components/schemas/amountValue"
+      example: { "currency": "EUR", "amount": "123" }
+
+    amountValue:
+      description: |
+        The amount given with fractional digits, where fractions must be compliant to the currency definition.
+        Up to 14 significant figures. Negative amounts are signed by minus.
+        The decimal separator is a dot.
+
+        **Example:**
+        Valid representations for EUR with up to two decimals are:
+
+          * 1056
+          * 5768.2
+          * -1.50
+          * 5877.78
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]{1,3})?$"
+      example: "5877.78"
+
+    bankTransactionCode:
+      description: |
+        Bank transaction code as used by the ASPSP and using the sub elements of this structured code defined by ISO 20022.
+
+        This code type is concatenating the three ISO20022 Codes
+          * Domain Code,
+          * Family Code, and
+          * SubFamiliy Code
+        by hyphens, resulting in �DomainCode�-�FamilyCode�-�SubFamilyCode�.
+      type: string
+      example: "PMNT-RCDT-ESCT"
+
+    bookingDate:
+      description: |
+        The date when an entry is posted to an account on the ASPSPs books.
+      type: string
+      format: date
+
+    bban:
+      description: |
+        Basic Bank Account Number (BBAN) Identifier.
+
+        This data element can be used in the body of the Consent request.
+          Message for retrieving Account access Consent from this Account. This
+          data elements is used for payment Accounts which have no IBAN.
+          ISO20022: Basic Bank Account Number (BBAN).
+
+          Identifier used nationally by financial institutions, i.e., in individual countries,
+          generally as part of a National Account Numbering Scheme(s),
+          which uniquely identifies the account of a customer.
+      type: string
+      pattern: "[a-zA-Z0-9]{1,30}"
+      example: "BARC12345612345678"
+
+    bicfi:
+      description: |
+        BICFI
+      type: string
+      pattern: "[A-Z]{6,6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3,3}){0,1}"
+      example: "AAAADEBBXXX"
+
+    cashAccountType:
+      description: |
+        ExternalCashAccountType1Code from ISO 20022.
+      type: string
+
+    countryCode:
+      description: ISO 3166 ALPHA2 country code.
+      type: string
+      pattern: "[A-Z]{2}"
+      example: "SE"
+
+    creditorName:
+      description: Creditor Name.
+      type: string
+      maxLength: 70
+      example: "Creditor Name"
+
+    currencyCode:
+      description: |
+        ISO 4217 Alpha 3 currency code.
+      type: string
+      pattern: "[A-Z]{3}"
+      example: "EUR"
+
+    debtorName:
+      description: Debtor Name.
+      type: string
+      maxLength: 70
+      example: "Debtor Name"
+
+    generalError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "ERROR_CODE"
+        message:
+          type: string
+          example: "Error description message"
+
+    hrefType:
+      description: Link to a resource.
+      type: object
+      properties:
+        href:
+          $ref: "#/components/schemas/hrefEntry"
+
+    hrefEntry:
+      description: Link to a resource.
+      type: string
+      example: "https://www.example.com/path/resource?parameter=value"
+
+    iban:
+      type: string
+      description: International bank account number ISO 31616.
+      pattern: "[A-Z]{2,2}[0-9]{2,2}[a-zA-Z0-9]{1,30}"
+      example: "FR7612345987650123456789014"
+
+    linksAccountDetails:
+      description: |
+        Links to the account, which can be directly used for retrieving account information from this dedicated account.
+
+        Links to "balances" and/or "transactions"
+
+        These links are only supported, when the corresponding consent has been already granted.
+      type: object
+      properties:
+        balances:
+          $ref: "#/components/schemas/hrefType"
+        transactions:
+          $ref: "#/components/schemas/hrefType"
+
+    maskedPan:
+      description: |
+        Masked Primary Account Number.
+      type: string
+      maxLength: 35
+      example: "123456xxxxxx1234"
+
+    msisdn:
+      type: string
+      maxLength: 35
+      description: Mobile phone number.
+      example: "+49 170 1234567"
+
+    pan:
+      description: |
+        Primary Account Number according to ISO/IEC 7812.
+      type: string
+      maxLength: 35
+      #According to ISO the following should be valid.
+      #maxLength: 19
+      #minLength: 8
+      #pattern: "[0-9]{8,19}"
+      example: "5409050000000000"
+
+    proprietaryBankTransactionCode:
+      description: |
+        Proprietary bank transaction code as used within a community or within an ASPSP e.g.
+        for MT94x based transaction reports.
+      type: string
+      maxLength: 35
+
+    purposeCode:
+      description: |
+        ExternalPurpose1Code from ISO 20022.
+
+        Values from ISO 20022 External Code List ExternalCodeSets_1Q2018 June 2018.
+
+      type: string
+      enum:
+        - "BKDF"
+        - "BKFE"
+        - "BKFM"
+        - "BKIP"
+        - "BKPP"
+        - "CBLK"
+        - "CDCB"
+        - "CDCD"
+        - "CDCS"
+        - "CDDP"
+        - "CDOC"
+        - "CDQC"
+        - "ETUP"
+        - "FCOL"
+        - "MTUP"
+        - "ACCT"
+        - "CASH"
+        - "COLL"
+        - "CSDB"
+        - "DEPT"
+        - "INTC"
+        - "LIMA"
+        - "NETT"
+        - "BFWD"
+        - "CCIR"
+        - "CCPC"
+        - "CCPM"
+        - "CCSM"
+        - "CRDS"
+        - "CRPR"
+        - "CRSP"
+        - "CRTL"
+        - "EQPT"
+        - "EQUS"
+        - "EXPT"
+        - "EXTD"
+        - "FIXI"
+        - "FWBC"
+        - "FWCC"
+        - "FWSB"
+        - "FWSC"
+        - "MARG"
+        - "MBSB"
+        - "MBSC"
+        - "MGCC"
+        - "MGSC"
+        - "OCCC"
+        - "OPBC"
+        - "OPCC"
+        - "OPSB"
+        - "OPSC"
+        - "OPTN"
+        - "OTCD"
+        - "REPO"
+        - "RPBC"
+        - "RPCC"
+        - "RPSB"
+        - "RPSC"
+        - "RVPO"
+        - "SBSC"
+        - "SCIE"
+        - "SCIR"
+        - "SCRP"
+        - "SHBC"
+        - "SHCC"
+        - "SHSL"
+        - "SLEB"
+        - "SLOA"
+        - "SWBC"
+        - "SWCC"
+        - "SWPT"
+        - "SWSB"
+        - "SWSC"
+        - "TBAS"
+        - "TBBC"
+        - "TBCC"
+        - "TRCP"
+        - "AGRT"
+        - "AREN"
+        - "BEXP"
+        - "BOCE"
+        - "COMC"
+        - "CPYR"
+        - "GDDS"
+        - "GDSV"
+        - "GSCB"
+        - "LICF"
+        - "MP2B"
+        - "POPE"
+        - "ROYA"
+        - "SCVE"
+        - "SERV"
+        - "SUBS"
+        - "SUPP"
+        - "TRAD"
+        - "CHAR"
+        - "COMT"
+        - "MP2P"
+        - "ECPG"
+        - "ECPR"
+        - "ECPU"
+        - "EPAY"
+        - "CLPR"
+        - "COMP"
+        - "DBTC"
+        - "GOVI"
+        - "HLRP"
+        - "HLST"
+        - "INPC"
+        - "INPR"
+        - "INSC"
+        - "INSU"
+        - "INTE"
+        - "LBRI"
+        - "LIFI"
+        - "LOAN"
+        - "LOAR"
+        - "PENO"
+        - "PPTI"
+        - "RELG"
+        - "RINP"
+        - "TRFD"
+        - "FORW"
+        - "FXNT"
+        - "ADMG"
+        - "ADVA"
+        - "BCDM"
+        - "BCFG"
+        - "BLDM"
+        - "BNET"
+        - "CBFF"
+        - "CBFR"
+        - "CCRD"
+        - "CDBL"
+        - "CFEE"
+        - "CGDD"
+        - "CORT"
+        - "COST"
+        - "CPKC"
+        - "DCRD"
+        - "DSMT"
+        - "DVPM"
+        - "EDUC"
+        - "FACT"
+        - "FAND"
+        - "FCPM"
+        - "FEES"
+        - "GOVT"
+        - "ICCP"
+        - "IDCP"
+        - "IHRP"
+        - "INSM"
+        - "IVPT"
+        - "MCDM"
+        - "MCFG"
+        - "MSVC"
+        - "NOWS"
+        - "OCDM"
+        - "OCFG"
+        - "OFEE"
+        - "OTHR"
+        - "PADD"
+        - "PTSP"
+        - "RCKE"
+        - "RCPT"
+        - "REBT"
+        - "REFU"
+        - "RENT"
+        - "REOD"
+        - "RIMB"
+        - "RPNT"
+        - "RRBN"
+        - "RVPM"
+        - "SLPI"
+        - "SPLT"
+        - "STDY"
+        - "TBAN"
+        - "TBIL"
+        - "TCSC"
+        - "TELI"
+        - "TMPG"
+        - "TPRI"
+        - "TPRP"
+        - "TRNC"
+        - "TRVC"
+        - "WEBI"
+        - "ANNI"
+        - "CAFI"
+        - "CFDI"
+        - "CMDT"
+        - "DERI"
+        - "DIVD"
+        - "FREX"
+        - "HEDG"
+        - "INVS"
+        - "PRME"
+        - "SAVG"
+        - "SECU"
+        - "SEPI"
+        - "TREA"
+        - "UNIT"
+        - "FNET"
+        - "FUTR"
+        - "ANTS"
+        - "CVCF"
+        - "DMEQ"
+        - "DNTS"
+        - "HLTC"
+        - "HLTI"
+        - "HSPC"
+        - "ICRF"
+        - "LTCF"
+        - "MAFC"
+        - "MARF"
+        - "MDCS"
+        - "VIEW"
+        - "CDEP"
+        - "SWFP"
+        - "SWPP"
+        - "SWRS"
+        - "SWUF"
+        - "ADCS"
+        - "AEMP"
+        - "ALLW"
+        - "ALMY"
+        - "BBSC"
+        - "BECH"
+        - "BENE"
+        - "BONU"
+        - "CCHD"
+        - "COMM"
+        - "CSLP"
+        - "GFRP"
+        - "GVEA"
+        - "GVEB"
+        - "GVEC"
+        - "GVED"
+        - "GWLT"
+        - "HREC"
+        - "PAYR"
+        - "PEFC"
+        - "PENS"
+        - "PRCP"
+        - "RHBS"
+        - "SALA"
+        - "SSBE"
+        - "LBIN"
+        - "LCOL"
+        - "LFEE"
+        - "LMEQ"
+        - "LMFI"
+        - "LMRK"
+        - "LREB"
+        - "LREV"
+        - "LSFL"
+        - "ESTX"
+        - "FWLV"
+        - "GSTX"
+        - "HSTX"
+        - "INTX"
+        - "NITX"
+        - "PTXP"
+        - "RDTX"
+        - "TAXS"
+        - "VATX"
+        - "WHLD"
+        - "TAXR"
+        - "B112"
+        - "BR12"
+        - "TLRF"
+        - "TLRR"
+        - "AIRB"
+        - "BUSB"
+        - "FERB"
+        - "RLWY"
+        - "TRPT"
+        - "CBTV"
+        - "ELEC"
+        - "ENRG"
+        - "GASB"
+        - "NWCH"
+        - "NWCM"
+        - "OTLC"
+        - "PHON"
+        - "UBIL"
+        - "WTER"
+
+    remittanceInformationUnstructured:
+      description: |
+        Unstructured remittance information.
+      type: string
+      maxLength: 140
+      example: "Ref Number Merchant"
+
+    reportExchangeRateList:
+      description: Array of exchange rates.
+      type: array
+      items:
+        $ref: "#/components/schemas/reportExchangeRate"
+
+    reportExchangeRate:
+      description: Exchange Rate.
+      type: object
+      required:
+        - sourceCurrency
+        - exchangeRate
+        - unitCurrency
+        - targetCurrency
+        - quotationDate
+      properties:
+        sourceCurrency:
+          $ref: "#/components/schemas/currencyCode"
+        exchangeRate:
+          type: string
+        unitCurrency:
+          type: string
+        targetCurrency:
+          $ref: "#/components/schemas/currencyCode"
+        quotationDate:
+          type: string
+          format: date
+        contractIdentification:
+          type: string
+
+    transactionDetails:
+      description: Transaction details.
+      type: object
+      required:
+        - transactionAmount
+      properties:
+        transactionId:
+          description: |
+            the Transaction Id can be used as access-ID in the API, where more details on an transaction is offered.
+            If this data attribute is provided this shows that the AIS can get access on more details about this
+            transaction using the Get transaction details request.
+          type: string
+        entryReference:
+          description: |
+            Is the identification of the transaction as used e.g. for reference for deltafunction on application level.
+            The same identification as for example used within camt.05x messages.
+          type: string
+          maxLength: 35
+        endToEndId:
+          description: Unique end to end identity.
+          type: string
+          maxLength: 35
+        mandateId:
+          description: Identification of Mandates, e.g. a SEPA Mandate ID.
+          type: string
+          maxLength: 35
+        checkId:
+          description: Identification of a Cheque.
+          type: string
+          maxLength: 35
+        creditorId:
+          description: Identification of Creditors, e.g. a SEPA Creditor ID.
+          type: string
+          maxLength: 35
+        bookingDate:
+          $ref: "#/components/schemas/bookingDate"
+        valueDate:
+          description: The Date at which assets become available to the account owner in case of a credit.
+          type: string
+          format: date
+        transactionAmount:
+          $ref: "#/components/schemas/amount"
+        currencyExchange:
+          $ref: "#/components/schemas/reportExchangeRateList"
+        creditorName:
+          $ref: "#/components/schemas/creditorName"
+        creditorAccount:
+          $ref: "#/components/schemas/accountReference"
+        ultimateCreditor:
+          $ref: "#/components/schemas/ultimateCreditor"
+        debtorName:
+          $ref: "#/components/schemas/debtorName"
+        debtorAccount:
+          $ref: "#/components/schemas/accountReference"
+        ultimateDebtor:
+          $ref: "#/components/schemas/ultimateDebtor"
+        remittanceInformationUnstructured:
+          $ref: "#/components/schemas/remittanceInformationUnstructured"
+        remittanceInformationStructured:
+          description: |
+            Reference as contained in the structured remittance reference structure (without the surrounding XML structure).
+
+            Different from other places the content is containt in plain form not in form of a structered field.
+          type: string
+          maxLength: 140
+        additionalInformation:
+          description: |
+            Might be used by the ASPSP to transport additional transaction related information to the PSU.
+          type: string
+          maxLength: 512
+        purposeCode:
+          $ref: "#/components/schemas/purposeCode"
+        bankTransactionCode:
+          $ref: "#/components/schemas/bankTransactionCode"
+        proprietaryBankTransactionCode:
+          $ref: "#/components/schemas/proprietaryBankTransactionCode"
+
+    transactionList:
+      description: Array of transaction details.
+      type: array
+      items:
+        $ref: "#/components/schemas/transactionDetails"
+
+    transactionsResponse:
+      description: |
+        Body of the JSON response for a successful read transaction list request.
+        This account report contains transactions resulting from the query parameters.
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/accountReference"
+        transactions:
+          $ref: "#/components/schemas/accountReport"
+        analytics:
+          $ref: "#/components/schemas/analyticsReport"
+
+    ultimateCreditor:
+      description: Ultimate Creditor.
+      type: string
+      maxLength: 70
+      example: "Ultimate Creditor"
+
+    ultimateDebtor:
+      description: Ultimate Debtor.
+      type: string
+      maxLength: 70
+      example: "Ultimate Debtor"
+
+    AccountBalance:
+      title: AccountBalance
+      type: object
+      properties:
+        balanceAmount:
+          $ref: "#/components/schemas/amount"
+        balanceType:
+          type: string
+        iban:
+          type: string
+        lastChangeDateTime:
+          type: string
+          format: date-time
+        lastCommittedTransaction:
+          type: string
+        referenceDate:
+          type: string
+          format: date

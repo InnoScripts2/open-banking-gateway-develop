@@ -1,0 +1,21 @@
+{
+  "extras": {
+    "PSU_ID": "max.musterman"
+  },
+  "consentAuth": {
+    "consent": {
+      "recurringIndicator": true,
+      "combinedServiceIndicator": false,
+      "access": {
+        "transactions": [
+          {
+            "iban": "111111111111111",
+            "currency": "EUR"
+          }
+        ]
+      },
+      "frequencyPerDay": 12,
+      "validUntil": "2030-01-31"
+    }
+  }
+}

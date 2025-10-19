@@ -1,0 +1,105 @@
+# Builds pushes and merges on develop branch
+name: Develop branch build
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: 'temurin'
+
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Free disk space
+        run: |
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          docker system prune -af
+          echo "Available space"
+          df -h
+
+      - name: Build project and run default test suite
+        run: ./scripts/build_and_test.sh
+        env:
+          MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120" # Github-on-Azure tweaks - https://github.com/actions/virtual-environments/issues/1499
+
+      - name: Check deployment flow and check artifact signing
+        run: ./scripts/mvn_deploy_check_develop.sh
+        env:
+          MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120" # Github-on-Azure tweaks - https://github.com/actions/virtual-environments/issues/1499
+          # Note that these BELOW are DEVELOP secrets, not ones used for real deployment
+          # They are used to have very close pipeline to one present on production
+          GPG_EXECUTABLE: gpg
+          GPG_PASSPHRASE: ${{ secrets.DEVELOP_GPG_PASSPHRASE }}
+          GPG_SECRET_KEY: ${{ secrets.DEVELOP_GPG_SECRET_KEY }}
+          GPG_OWNERTRUST: ${{ secrets.DEVELOP_GPG_OWNERTRUST }}
+          MOZ_HEADLESS: 1
+
+      - name: Build FireFly improter
+        run: ./scripts/build_firefly_exporter_mvn.sh
+        env:
+          MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120" # Github-on-Azure tweaks - https://github.com/actions/virtual-environments/issues/1499
+
+##     - name: Deploy develop artifacts to OpenShift
+##       run: ./scripts/deploy_openshift.sh scripts/service.list
+##        env:
+##          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+
+##    - name: Deploy FireFly-importer to OpenShift
+##        run: ./scripts/deploy_openshift.sh scripts/firefly-service.list
+##      env:
+##         OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+
+      # CODECOV Upload BEGIN
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./last-module-codecoverage/
+          flags: backend
+          verbose: true
+
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./consent-ui/
+          flags: frontend
+          verbose: true
+
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./fintech-examples/fintech-last-module-codecoverage/
+          flags: fintech
+          verbose: true
+
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./fintech-examples/fintech-ui/
+          flags: fintech
+          verbose: true
+      # CODECOV Upload END
+
+      - name: Update GitHub pages
+        run: ./scripts/deploy_doc.sh
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Validate OpenShift DEV env deployment status
+      #   run: ./scripts/validate_dev_deploy.sh
+      #   env:
+      #     MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120" # Github-on-Azure tweaks - https://github.com/actions/virtual-environments/issues/1499
+      #     MOZ_HEADLESS: 1

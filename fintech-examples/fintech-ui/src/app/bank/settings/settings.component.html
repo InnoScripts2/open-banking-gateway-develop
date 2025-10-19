@@ -1,0 +1,198 @@
+<form class="header__margin" [formGroup]="settingsForm">
+  <div class="card card-frame--big">
+    <div class="card-body">
+      <section class="settings">
+        <h2 class="card-title--normal">Settings for bank {{ bankId }}</h2>
+        <p class="text-secondary">These settings affect result of calls</p>
+
+        <div class="form-group">
+          <h4 class="text-secondary">List of Accounts</h4>
+          <div class="form-check">
+            <input type="radio" value="{{ loaFromTppWithAvailableConsent }}" formControlName="loa" id="loa" />
+            <label for="loa">If consent available without redirect.</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" value="{{ loaFromTppWithNewConsent }}" formControlName="loa" id="loa2" />
+            <label for="loa2">Discard propably existing consent ONE TIME ONLY.</label>
+          </div>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              value="{{ settingsForm.get('cacheLoa') }}"
+              formControlName="cacheLoa"
+              id="cacheLoa"
+            />
+            <label for="cacheLoa">Use protocol cache of TPP Server</label>
+          </div>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              value="{{ settingsForm.get('withBalance') }}"
+              formControlName="withBalance"
+              id="balance"
+            />
+            <label for="balance">Get accounts with balance</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <h4 class="text-secondary">List of Transactions</h4>
+          <div class="form-check">
+            <input type="radio" value="{{ lotFromTppWithAvailableConsent }}" formControlName="lot" id="lot" />
+            <label for="lot">If consent available without redirect.</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" value="{{ lotFromTppWithNewConsent }}" formControlName="lot" id="lot2" />
+            <label for="lot2">Discard probably existing consent ONE TIME ONLY.</label>
+          </div>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              value="{{ settingsForm.get('cacheLot') }}"
+              formControlName="cacheLot"
+              id="cacheLot"
+            />
+            <label for="cacheLot">Use protocol cache of TPP Server</label>
+          </div>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              value="{{ settingsForm.get('consentRequiresAuthentication') }}"
+              formControlName="consentRequiresAuthentication"
+              id="consentRequiresAuthentication"
+            />
+            <label for="consent">Consent requires authentication</label>
+          </div>
+          <div>
+            <p>Period from:</p>
+            <input
+              class="form-control dateFrom"
+              type="date"
+              id="dateFrom"
+              name="dateFrom"
+              formControlName="dateFrom"
+            />
+          </div>
+          <div>
+            <p>to:</p>
+            <input
+              class="form-control dateTo`"
+              type="date"
+              id="dateTo"
+              name="dateTo"
+              formControlName="dateTo"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <h4 class="text-secondary">Consent Request</h4>
+          <div>
+            <div class="form-check">
+              <label>
+                <input
+                  type="radio"
+                  value="{{ consentTypeNone }}"
+                  formControlName="consentSettingType"
+                  id="consentType0"
+                />None
+              </label>
+              <label style="margin-right: 15px; margin-left: 15px">
+                <input
+                  type="radio"
+                  value="{{ consentTypeDefault }}"
+                  formControlName="consentSettingType"
+                  id="consentType1"
+                />Default
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="{{ consentTypeCustom }}"
+                  formControlName="consentSettingType"
+                  id="consentType2"
+                />Custom
+              </label>
+            </div>
+
+            <div *ngIf="settingsForm.controls.consentSettingType.value === consentTypeDefault">
+              <div class="form-check">
+                <label for="frequencyPerDay">frequency per day</label>
+                <input
+                  type="number"
+                  value="{{ settingsForm.get('frequencyPerDay') }}"
+                  formControlName="frequencyPerDay"
+                  id="frequencyPerDay"
+                />
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  value="{{ settingsForm.get('recurringIndicator') }}"
+                  formControlName="recurringIndicator"
+                  id="requrringIndicator"
+                />
+                <label for="requrringIndicator">requrring indicator</label>
+              </div>
+              <div class="form-check">
+                <label for="validUntil">valid until</label>
+                <input
+                  type="date"
+                  value="{{ settingsForm.get('validUntil') }}"
+                  formControlName="validUntil"
+                  id="validUntil"
+                />
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  value="{{ settingsForm.get('combinedServiceIndicator') }}"
+                  formControlName="combinedServiceIndicator"
+                  id="combinedServiceIndicator"
+                />
+                <label for="combinedServiceIndicator">combined service indicator</label>
+              </div>
+            </div>
+
+            <div *ngIf="settingsForm.controls.consentSettingType.value === consentTypeCustom" class="form-check">
+              <textarea rows="7" cols="50" formControlName="consent" id="consent">{{
+                settingsForm.get('consent')
+              }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <h4 class="text-secondary">Payments</h4>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              value="{{ settingsForm.get('paymentRequiresAuthentication') }}"
+              formControlName="paymentRequiresAuthentication"
+              id="payment"
+            />
+            <label for="payment">Payment requires authentication</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <h4 class="text-secondary">Other settings</h4>
+          <button (click)="onDelete()" class="btn btn-primary w-100" id="do_delete_in_fintech" type="button">
+            Delete consent in FinTech Server
+          </button>
+        </div>
+      </section>
+      <div class="d-sm-flex">
+        <button (click)="onNavigateBack()" class="btn btn-outline-secondary w-100 mr-4" id="do_deny">Cancel</button>
+        <button
+          (click)="onConfirm()"
+          [disabled]="settingsForm.invalid"
+          class="btn btn-primary w-100"
+          id="do_submit"
+          type="submit"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,34 @@
+<nav class="navbar navbar-light py-3" *ngIf="isLoggedIn()">
+  <a class="navbar-brand text-primary mr-4" routerLink="/">
+    <span class="ml-3 text-bold">FintechUI</span>
+    <ul class="list-group">
+      <li class="list-group-item">session expires {{ timer?.sessionValidUntil }}</li>
+      <li class="list-group-item" *ngFor="let validUntil of timer?.redirectsValidUntil">
+        redirect session {{ validUntil }}
+      </li>
+    </ul>
+  </a>
+  <ul class="nav">
+    <li class="dropdown ml-auto">
+      <a
+        class="nav-item dropdown-toggle"
+        id="dropdownMenuButton"
+        data-bs-toggle="dropdown"
+        aria-haspopup="true"
+        aria-expanded="false"
+        >{{ getUserName() }}</a
+      >
+      <div class="dropdown-menu dropdown-menu-right">
+        <button
+          (click)="onLogout()"
+          (keydown.enter)="onLogout()"
+          (keydown.space)="onLogout()"
+          class="dropdown-item"
+          type="button"
+        >
+          Sign Out
+        </button>
+      </div>
+    </li>
+  </ul>
+</nav>

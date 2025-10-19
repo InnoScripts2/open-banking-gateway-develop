@@ -1,0 +1,731 @@
+openapi: 3.0.3
+info:
+  title: An include file to define common attributes
+  version: 1.0.0
+paths: {}
+
+components:
+  requestBodies:
+    UpdateMetadata:
+      description: Update metadata for 3rd party service
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateMetadata"
+      required: false
+
+    DeleteMetadata:
+      description: Delete metadata for 3rd party service
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DeleteMetadata"
+      required: false
+
+  headers:
+    Location:
+      required: true
+      description: |
+        URL where User have to be redirected to in order to perform next step.
+      example: "https://example.com/someservice/some-id/somepage?param=value"
+      schema:
+        type: string
+
+    X-Request-ID:
+      required: true
+      description: |
+        Unique ID that identifies this request through common workflow.
+        Shall be contained in HTTP Response as well.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    Service-Session-ID:
+      required: true
+      description: |
+        Unique ID that identifies service session. Can be used for batch processing to correlate input and output.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    Authorization-Session-ID:
+      required: true
+      description: |
+        Unique ID that identifies authorization session.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    Redirect-Code:
+      required: true
+      description: |
+        Unique ID acts as a password protecting FinTech requested consent specification
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+  parameters:
+    Authorization:
+      name: Authorization
+      in: header
+      required: true
+      description: |
+        Unique Token that identifies FinTech Session for this request.
+      example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik15IGNvb2wgRmludGVjaCBBcHAiLCJpYXQiOjE1MTYyMzkwMjJ9.NfpSq7hot-1x3rZOaqRaSJzNnMw6ltX-9eqxcCQnGbI"
+      schema:
+        type: string
+
+    ServiceSessionPassword:
+      name: Service-Session-Password
+      in: header
+      required: false
+      deprecated: true
+      description: |
+        Password to encrypt Fintech data. **Deprecated**, use `Fintech-Data-Password` instead - same semantics.
+        Note either `Service-Session-Password` or `Fintech-Data-Password` is required.
+      example: "qwerty"
+      schema:
+        type: string
+
+    FintechDataPassword:
+      name: Fintech-Data-Password
+      in: header
+      required: false
+      description: |
+        Password to encrypt Fintech data. Will become mandatory(required) after `Service-Session-Password` is removed.
+        Note either `Service-Session-Password` or `Fintech-Data-Password` is required.
+      example: "qwerty"
+      schema:
+        type: string
+
+    Bank-Profile-ID:
+      name: Bank-Profile-ID
+      in: header
+      required: false
+      description: |
+        A bank profile UUID identifier, provided by TPP Bank Search API. To be provided by FinTech only if PsuConsentSession is missing.
+      example: "bcc52c4f-5523-4477-aef5-84c3ae7cc468"
+      schema:
+        type: string
+        format: uuid
+
+    Fintech-User-ID:
+      name: Fintech-User-ID
+      in: header
+      required: true
+      description: |
+        An End-User identifier, known by FinTech, that unique for each physical person.
+        To be provided by FinTech with every request in order to validate the mapping of service request to the particular user.
+      example: "1234-0XGJK"
+      schema:
+        type: string
+
+    Service-Session-ID:
+      name: Service-Session-ID
+      in: header
+      required: false
+      description: |
+        Unique ID that identifies service session. Can be used for batch processing to correlate input and output.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    Service-Session-ID-Path:
+      name: Service-Session-ID
+      in: path
+      required: true
+      description: |
+        Unique ID that identifies service session. Can be used for batch processing to correlate input and output.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    External-Session-ID:
+      name: externalSessionId
+      in: query
+      required: false
+      description: |
+        Unique ID that identifies external session or taks. I.e. FinAPI task
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+
+    X-Request-ID:
+      name: X-Request-ID
+      in: header
+      required: true
+      description: |
+        Unique ID that identifies this request through common workflow.
+        Shall be contained in HTTP Response as well.
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    X-Timestamp-UTC:
+      name: X-Timestamp-UTC
+      in: header
+      required: false
+      description: |
+        The timestamp of the operation.
+      example: "2020-04-14T08:46:33.629Z"
+      schema:
+        type: string
+
+    X-Psu-Authentication-Required:
+      name: X-Psu-Authentication-Required
+      in: header
+      description: |
+        If false, login form to OPBA will not be displayed, so that authentication is not necessary.
+        If absent or true - login form will be displayed, in order for OBG to know the PSU.
+      example: "true"
+      schema:
+        type: boolean
+        default: "true"
+
+    X-Request-Signature:
+      name: X-Request-Signature
+      in: header
+      required: false
+      description: |
+        A signature of the request by the TPP fintech.
+      schema:
+        type: string
+
+    Fintech-ID:
+      name: Fintech-ID
+      in: header
+      required: false
+      description: |
+        Unique ID that identifies fintech.
+      example: "fintech_123"
+      schema:
+        type: string
+
+    Fintech-Redirect-URL-OK:
+      name: Fintech-Redirect-URL-OK
+      in: header
+      description: |
+        This header provides the desired URL where PSU will be redirected back after authorisation session in case of
+        successful authorisation. This URL might contain unique Identifier of this User and/or Session,
+        recognisable by FinTech.
+        Since authorisation may be mandated by the bank at any time, this header to be included to all
+        service requests, even if PsuConsentSession already exists.
+      required: true
+      schema:
+        type: string
+      example: "https://example.com/myservice/sf3-3r33-3535?authResult=success"
+
+    Fintech-Redirect-URL-NOK:
+      name: Fintech-Redirect-URL-NOK
+      in: header
+      description: |
+        This header provides the desired URL where PSU will be redirected back  after authorisation session in case of
+        unsuccessful authorisation (i.e. PSU's authorisation reject, technical failure, lack of credentials etc.).
+        This URL might contain unique Identifier of this User and/or Session,
+        recognisable by FinTech.
+        Since authorisation may be mandated by the bank at any time, this header to be included to all
+        service requests, even if PsuConsentSession already exists.
+      required: true
+      schema:
+        type: string
+      example: "https://example.com/myservice/sf3-3r33-3535/failure"
+
+    X-Create-Consent-If-None:
+      name: X-Create-Consent-If-None
+      required: false
+      in: header
+      schema:
+        type: string
+        description: json representation of AisConsentRequest object
+        example: {"access":{"allPsd2":"ALL_ACCOUNTS_WITH_BALANCES"},"frequencyPerDay":4,"validUntil":"2021-06-18","recurringIndicator":true,"combinedServiceIndicator":false}
+
+    X-Import-User-Data:
+      name: X-Import-User-Data
+      description: Optional, third party data like username/password of external service to be used in service session. Allows to import already existing users into this system.
+      required: false
+      in: header
+      schema:
+        type: string
+        description: |
+          Json representation of third party authorization object, may include credentials to create new user in
+          3rd party-service (username/password) with flag 'createUser' to specify that we need to create user explicitly,
+          or credentials to re-use in 3rd party-service
+        example: { "username": "jane.doe", "password": "secret", "createUser": true, "email": "foo@example.com", "phone": "+1234567", "isAutoUpdateEnabled": true }
+
+    X-Protocol-Configuration:
+      name: X-Protocol-Configuration
+      description: Optional, third party protocol configuration (i.e. account type to import)
+      required: false
+      in: header
+      schema:
+        type: string
+        description: |
+          Json representation of third party protocol configuration object
+        example: { "accountType": "jane.doe", "accountTypes": ["CREDIT_CARD","CHECKING"], "maxDaysForDownload": 90, "profileId": "c06bf92c-fffd-45c3-a7f9-e105d577ae51" }
+
+    Compute-PSU-IP-Address:
+      name: Compute-PSU-IP-Address
+      in: header
+      required: false
+      description: |
+        Should be provided if consent does not exist.
+        If false, PSU IP address should be provided in an appropriate header.
+        If absent or true - PSU IP address will be computed by OBG.
+      example: "true"
+      schema:
+        type: boolean
+
+    PSU-IP-Address:
+      name: PSU-IP-Address
+      in: header
+      required: false
+      description: |
+        IP address of PSU, should be provided if consent does not exist or "Compute-Psu-Ip-Address" header is "false".
+      example: "1.1.1.1"
+      schema:
+        type: string
+
+    Fintech-Decoupled-Preferred:
+      name: Fintech-Decoupled-Preferred
+      in: header
+      description: |
+        If it equals "true", the Fintech prefers a decoupled SCA approach.If it equals "false", the Fintech prefers not to use the decoupled approach for SCA.
+        The ASPSP will then choose betweenthe embedded or the redirect SCA approach, depending on the choice of the SCA procedure by the Fintech/PSU.
+        If the parameter is not used, the ASPSP will choose the SCA approach to be applied depending on the parameter Fintech-Redirect-Preferred and the SCA method chosen by the Fintech/PSU.The parameter might be ignored by the ASPSP.
+        If both parameters Fintech-Redirect-Preferred and Fintech-Decoupled-Preferred are present and true, the request is still notrejected, but it is up to the ASPSP, which approach will actually be used.
+        **Remark for Future:**
+        Fintech-Redirect-Preferred and Fintech-Decoupled-Preferred will be revised in future versions, maybe merged.
+        Currently keptseparate for downward compatibility.
+      schema:
+        type: boolean
+      required: false
+
+    Fintech-Brand-Logging-Information:
+      name: Fintech-Brand-Logging-Information
+      in: header
+      description: |
+        This header might be used by Fintechs to inform the ASPSP about the brand used by the Fintech towards the PSU.
+        This information is meant for logging entries to enhance communication between ASPSP and PSU or ASPSP and Fintech.
+        This header might be ignored by the ASPSP.
+      schema:
+        type: string
+      required: false
+
+    Fintech-Notification-URI:
+      name: Fintech-Notification-URI
+      in: header
+      description: |
+        URI for the Endpoint of the Fintech-API to which the status of the payment initiation should be sent.This header field may by ignored by the ASPSP.For security reasons,
+        it shall be ensured that the Fintech-Notification-URI as introduced above is secured by the Fintech eIDAS QWAC used for identification of the Fintech.
+        The following applies:URIs which are provided by Fintechs in Fintech-Notification-URI shall comply with the domain secured by the eIDAS QWACcertificate of the Fintech in the field CN or SubjectAltName of the certificate.
+        Please note that in case of example-Fintech.com as certificate entry Fintech- Notification-URI like www.example-Fintech.com/xs2a-client/v1/ASPSPidentifcation/mytransaction- id/notifications ornotifications.example-Fintech.com/xs2a-client/v1/ASPSPidentifcation/mytransaction- id/notifications would be compliant.
+        Wildcard definitions shall be taken into account for compliance checks by the ASPSP.
+        ASPSPs may respond with ASPSP-Notification-Support set to false, if the provided URIs do not comply.
+      schema:
+        type: string
+      required: false
+
+    Fintech-Notification-Content-Preferred:
+      name: Fintech-Notification-Content-Preferred
+      in: header
+      description: |
+        The string has the formstatus=X1, ..., Xn where Xi is one of the constants SCA, PROCESS, LAST and where constants are notrepeated.The usage of the constants supports the of following semantics:SCA: A notification on every change of the scaStatus attribute for all related authorisation processes ispreferred by the Fintech.
+        PROCESS: A notification on all changes of consentStatus or transactionStatus attributes is preferred by the Fintech.
+        LAST: Only a notification on the last consentStatus or transactionStatus as available in the XS2A interface ispreferred by the Fintech.
+        This header field may be ignored, if the ASPSP does not support resource notification services for the related Fintech.
+      schema:
+        type: string
+      required: false
+
+  responses:
+    sessionStatusResponse:
+      description: |
+        Session status - describe service session (consent/payment) readiness.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/sessionStatusDetails"
+
+    updateExternalAisSessionResponse:
+      description: |
+        Update status of external service.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/updateAisExternalSessionStatus"
+
+    401_UNAUTHORIZED:
+      description: |
+        Unauthorised. Access token absent or invalid.
+      headers:
+        X-Request-ID:
+          $ref: "./tpp_banking_api_commons.yml#/components/headers/X-Request-ID"
+      content:
+        application/json:
+          schema:
+            $ref: "./tpp_banking_api_commons.yml#/components/schemas/generalError"
+
+    404_NOT_FOUND:
+      description: |
+        Resource not found or path parameter is wrong.
+      headers:
+        X-Request-ID:
+          $ref: "./tpp_banking_api_commons.yml#/components/headers/X-Request-ID"
+      content:
+        application/json:
+          schema:
+            $ref: "./tpp_banking_api_commons.yml#/components/schemas/generalError"
+
+  schemas:
+    aisAccountAccessInfo:
+      title: AisAccountAccessInfo
+      type: object
+      properties:
+        accounts:
+          type: array
+          description: Access to accounts
+          items:
+            $ref: "#/components/schemas/accountReference"
+        allPsd2:
+          type: string
+          description: Consent on all accounts, balances and transactions of psu
+          example: ALL_ACCOUNTS
+          enum:
+            - ALL_ACCOUNTS
+            - ALL_ACCOUNTS_WITH_BALANCES
+        availableAccounts:
+          type: string
+          description: Consent on all available accounts of psu
+          example: ALL_ACCOUNTS
+          enum:
+            - ALL_ACCOUNTS
+            - ALL_ACCOUNTS_WITH_BALANCES
+        balances:
+          type: array
+          description: Access to balances
+          items:
+            $ref: "#/components/schemas/accountReference"
+        transactions:
+          type: array
+          description: Access to transactions
+          items:
+            $ref: "#/components/schemas/accountReference"
+      description: Ais account access information
+
+    aisConsentRequest:
+      title: AisConsentRequest
+      required:
+        - access
+        - frequencyPerDay
+        - recurringIndicator
+        - validUntil
+      type: object
+      properties:
+        access:
+          $ref: "#/components/schemas/aisAccountAccessInfo"
+        frequencyPerDay:
+          type: integer
+          description:
+            Maximum frequency for an access per day. For a once-off access,
+            this attribute is set to 1
+          format: int32
+          example: 4
+        recurringIndicator:
+          type: boolean
+          description:
+            "'true', if the consent is for recurring access to the account
+              data , 'false', if the consent is for one access to the account data"
+          example: false
+        validUntil:
+          type: string
+          description:
+            Consent`s expiration date. The content is the local ASPSP date
+            in ISODate Format
+          format: date
+          example: 2020-10-10
+        combinedServiceIndicator:
+          type: boolean
+          description:
+            "'true', if the consent is i.e. account list and then payment
+              'false', if the consent is for one access to the account data"
+          default: false
+      description: Ais consent request
+
+    accountReference:
+      description: |
+        Reference to an account by either:
+          * IBAN, of a payment accounts, or
+          * BBAN, for payment accounts if there is no IBAN, or
+          * the Primary Account Number (PAN) of a card, can be tokenised by the ASPSP due to PCI DSS requirements, or
+          * the Primary Account Number (PAN) of a card in a masked form, or
+          * an alias to access a payment account via a registered mobile phone number (MSISDN).
+      type: object
+      properties:
+        externalResourceId:
+          description: Identifier of the account in 3rd party data provider like FinAPI (similar to resourceId)
+          type: string
+        iban:
+          $ref: "#/components/schemas/iban"
+        bban:
+          $ref: "#/components/schemas/bban"
+        pan:
+          $ref: "#/components/schemas/pan"
+        maskedPan:
+          $ref: "#/components/schemas/maskedPan"
+        msisdn:
+          $ref: "#/components/schemas/msisdn"
+        currency:
+          $ref: "#/components/schemas/currencyCode"
+
+    iban:
+      type: string
+      description: International bank account number ISO 31616.
+      pattern: "[A-Z]{2,2}[0-9]{2,2}[a-zA-Z0-9]{1,30}"
+      example: "FR7612345987650123456789014"
+
+    bban:
+      description: |
+        Basic Bank Account Number (BBAN) Identifier.
+
+        This data element can be used in the body of the Consent request.
+          Message for retrieving Account access Consent from this Account. This
+          data elements is used for payment Accounts which have no IBAN.
+          ISO20022: Basic Bank Account Number (BBAN).
+
+          Identifier used nationally by financial institutions, i.e., in individual countries,
+          generally as part of a National Account Numbering Scheme(s),
+          which uniquely identifies the account of a customer.
+      type: string
+      pattern: "[a-zA-Z0-9]{1,30}"
+      example: "BARC12345612345678"
+
+    maskedPan:
+      description: |
+        Masked Primary Account Number.
+      type: string
+      maxLength: 35
+      example: "123456xxxxxx1234"
+
+    msisdn:
+      type: string
+      maxLength: 35
+      description: Mobile phone number.
+      example: "+49 170 1234567"
+
+    pan:
+      description: |
+        Primary Account Number according to ISO/IEC 7812.
+      type: string
+      maxLength: 35
+      #According to ISO the following should be valid.
+      #maxLength: 19
+      #minLength: 8
+      #pattern: "[0-9]{8,19}"
+      example: "5409050000000000"
+
+    amount:
+      type: object
+      required:
+        - currency
+        - amount
+      properties:
+        currency:
+          $ref: "#/components/schemas/currencyCode"
+        amount:
+          $ref: "#/components/schemas/amountValue"
+      example: { "currency": "EUR", "amount": "123" }
+
+    amountValue:
+      description: |
+        The amount given with fractional digits, where fractions must be compliant to the currency definition.
+        Up to 14 significant figures. Negative amounts are signed by minus.
+        The decimal separator is a dot.
+
+        **Example:**
+        Valid representations for EUR with up to two decimals are:
+
+          * 1056
+          * 5768.2
+          * -1.50
+          * 5877.78
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]{1,3})?$"
+      example: "5877.78"
+
+    currencyCode:
+      description: |
+        ISO 4217 Alpha 3 currency code.
+      type: string
+      pattern: "[A-Z]{3}"
+      example: "EUR"
+
+    bicfi:
+      description: |
+        BICFI
+      type: string
+      pattern: "[A-Z]{6,6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3,3}){0,1}"
+      example: "AAAADEBBXXX"
+
+    address:
+      type: object
+      required:
+        - country
+      properties:
+        streetName:
+          type: string
+          maxLength: 70
+        buildingNumber:
+          type: string
+        townName:
+          type: string
+        postCode:
+          type: string
+        country:
+          $ref: "#/components/schemas/countryCode"
+      example:
+        {
+          street: "rue blue",
+          buildingnNumber: "89",
+          townName: "Paris",
+          postalCode: "75000",
+          country: "FR",
+        }
+
+    countryCode:
+      description: ISO 3166 ALPHA2 country code.
+      type: string
+      pattern: "[A-Z]{2}"
+      example: "SE"
+
+    creditorName:
+      description: Creditor Name.
+      type: string
+      maxLength: 70
+      example: "Creditor Name"
+
+    creditorAgentName:
+      description: Creditor agent name.
+      type: string
+      maxLength: 70
+      example: Creditor Agent Name
+
+    remittanceInformationUnstructured:
+      description: |
+        Unstructured remittance information.
+      type: string
+      maxLength: 140
+      example: "Ref Number Merchant"
+
+    createdAt:
+      description: Payment creation time according to OpenBanking database
+      type: string
+      format: date-time
+
+    authSessionStatus:
+      type: object
+      properties:
+        lastErrorRequestId:
+          description: Last request ID that finished with error that was done within this session.
+          type: string
+        lastRequestId:
+          description: Last request ID that was done within this session.
+          type: string
+        createdAt:
+          description: Creation time of authorization session
+          type: string
+          format: date-time
+        updatedAt:
+          description: Update time of authorization session
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/sessionStatus"
+        externalStatus:
+          description: External status (i.e. in 3rd party service)
+          type: string
+
+    sessionStatusDetails:
+      type: object
+      properties:
+        createdAt:
+          description: Creation time of service session
+          type: string
+          format: date-time
+        updatedAt:
+          description: Update time of service session
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/sessionStatus"
+        externalLinkForPsu:
+          description: The link to visit by PSU to continue process in 3rd party system
+          type: string
+        externalStatus:
+          description: External status (i.e. in 3rd party service)
+          type: string
+        detailedStatus:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/authSessionStatus"
+
+    updateAisExternalSessionStatus:
+      type: object
+      properties:
+        status:
+          description: Resulting status of external status update call.
+          type: string
+        updateSessionId:
+          description: ID of the 'update' session in 3rd party system. I.e. task ID for FinAPI
+          type: string
+
+    sessionStatus:
+      type: string
+      enum:
+        - PENDING
+        - STARTED
+        - COMPLETED
+        - ACTIVATED
+        - DENIED
+        - ERROR
+      description: >
+        * `PENDING` - Session not started (user has not started session authorization)
+        * `STARTED` - Session started (user started session authorization)
+        * `COMPLETED` - Session completed (user completed session authorization, but FinTech must confirm it)
+        * `ACTIVATED` - Session activated and ready to use
+        * `DENIED` - User denied consent/payment authorization
+        * `ERROR` - Error happened during the process
+
+    generalError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "ERROR_CODE"
+        message:
+          type: string
+          example: "Error description message"
+
+    UpdateMetadata:
+      type: object
+      properties:
+        adapterProperties:
+          description: content of this field will be sent as body to 3rd party service
+          example: |
+            {"ipAddress": "1.1.1.1", "deviceOs": "Macintosh; Intel Mac OS X 10_15_7", "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"}
+          type: string
+
+    DeleteMetadata:
+      type: object
+      properties:
+        adapterProperties:
+          description: content of this field will be sent as body to 3rd party service
+          example: |
+            {"psuIpAddress": "1.1.1.1", "psuDeviceOs": "Macintosh; Intel Mac OS X 10_15_7", "psuUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)", "forceDeletion":"true", "xHttpMethodOverride": "PATCH"}
+          type: string

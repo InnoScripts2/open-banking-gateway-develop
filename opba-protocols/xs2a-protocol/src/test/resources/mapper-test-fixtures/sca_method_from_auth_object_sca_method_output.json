@@ -1,0 +1,5 @@
+{
+  "key": "SCA_SMS",
+  "value": "SMS_OTP:mobile",
+  "type": "SMS_OTP"
+}

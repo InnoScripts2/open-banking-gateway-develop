@@ -1,0 +1,20 @@
+<ng-container [ngSwitch]="aisConsent.level">
+  <ng-container *ngSwitchCase="accountAccessLevel.ALL_ACCOUNTS">
+    <p class="text-secondary">All accounts visible</p>
+  </ng-container>
+  <ng-container *ngSwitchCase="accountAccessLevel.ALL_ACCOUNTS_WITH_BALANCES">
+    <p class="text-secondary">All accounts, balances visible</p>
+  </ng-container>
+  <ng-container *ngSwitchCase="accountAccessLevel.ALL_PSD2">
+    <p class="text-secondary">All accounts, transactions, balances visible</p>
+  </ng-container>
+  <ng-container *ngSwitchCase="accountAccessLevel.FINE_GRAINED">
+    <p class="text-secondary">Transactions, balances:</p>
+    <ul class="pl-4 mb-4">
+      <li class="text-secondary" *ngFor="let account of aisConsent.consent.access.accounts">
+        {{ account.iban }} {{ account.currency }}
+      </li>
+    </ul>
+  </ng-container>
+  <p class="text-secondary">Until {{ aisConsent.consent.validUntil }}</p>
+</ng-container>

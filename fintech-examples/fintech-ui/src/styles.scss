@@ -1,0 +1,151 @@
+@use './assets/themes/variables' as vars;
+@use './assets/themes/fonts' as fonts;
+
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins';
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--main-BG);
+}
+
+.card {
+  border-radius: 16px;
+  //box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+  color: #2c2e2f;
+
+  &-frame {
+    margin: 120px auto 0;
+    max-width: 450px;
+    height: auto;
+
+    &--big {
+      max-width: 761px;
+    }
+  }
+
+  &-body {
+    padding: 3rem;
+    color: vars.$dark-80;
+  }
+
+  &-title {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    font-family: geometric-SemiBold, sans-serif;
+
+    &--normal {
+      text-align: inherit;
+      margin-bottom: 8px;
+    }
+  }
+
+  &-img {
+    width: 136px;
+    height: auto;
+  }
+}
+
+.font-weight-bold,
+.text-bold {
+  font-family: geometric-SemiBold, sans-serif;
+}
+
+.form__margin {
+  margin-bottom: 2rem;
+}
+
+label {
+  margin-bottom: 0;
+  color: vars.$primary;
+  line-height: 1;
+}
+
+.form-control,
+.btn {
+  height: 48px;
+  border: none;
+}
+
+.form-control,
+.form-control:focus {
+  border-radius: 0;
+  background-color: vars.$primary-30;
+}
+
+.btn {
+  align-content: center;
+
+  &-outline-secondary {
+    border: 1px solid $secondary;
+  }
+
+  &-center {
+    margin-left: auto;
+    margin-right: auto;
+    width: 70%;
+  }
+
+  &-link {
+    color: vars.$primary;
+    opacity: 0.6;
+  }
+}
+
+.payment,
+.settings {
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 767px) {
+  .card {
+    &-title {
+      font-size: 1.5rem;
+    }
+
+    &-body {
+      padding: 2rem;
+    }
+
+    &-img {
+      width: 100px;
+    }
+  }
+}
+
+.header__margin {
+  margin-left: 3rem;
+  margin-right: 3rem;
+  max-width: 761px;
+}
+
+@media (max-width: 767px) {
+  .card {
+    &-body {
+      padding: 2rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  button {
+    margin-bottom: 10px;
+  }
+
+  .col-12,
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .payment,
+  .settings {
+    margin-bottom: 2rem;
+  }
+}

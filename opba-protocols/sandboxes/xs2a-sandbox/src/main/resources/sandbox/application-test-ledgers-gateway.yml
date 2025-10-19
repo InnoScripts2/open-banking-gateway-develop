@@ -1,0 +1,26 @@
+# Alias xs2a at 8089 on host
+server:
+  port: ${common.apps.local.ledgersgateway.port}
+
+spring:
+  profiles:
+    # FIXME: Maybe mock-qwac is not good idea
+    active: postgres,mock-qwac,remote
+xs2a:
+  cms:
+    url: ${common.apps.mapping.consentmgmt}
+    aspsp-profile:
+      baseurl: ${common.apps.mapping.aspsp}/api/v1
+    consent-service:
+      baseurl: ${common.apps.mapping.consentmgmt}/api/v1
+xs2asandbox:
+  ledgers:
+    url: ${common.apps.mapping.ledgersapp}
+    tppui:
+      online-banking:
+        url: ${common.apps.mapping.onlinebanking}/api/v1/consents/confirm/{userLogin}/{consentId}/{authorizationId}/{tan}
+
+# To verify:
+skip_ssl_certificate_verification: true
+
+qwac-certificate-mock: -----BEGIN CERTIFICATE-----MIIEMzCCAxugAwIBAgIEeWjAIDANBgkqhkiG9w0BAQsFADB5MQswCQYDVQQGEwJERTEQMA4GA1UECAwHQkFWQVJJQTESMBAGA1UEBwwJTnVyZW1iZXJnMSMwIQYDVQQKDBpUcnVzdCBTZXJ2aWNlIFByb3ZpZGVyIEFHCjEfMB0GA1UECwwWSW5mb3JtYXRpb24gVGVjaG5vbG9neTAeFw0yMjAzMjMwOTE5MjZaFw0yMzAzMjMwMDAwMDBaMIG8MRQwEgYDVQQKDAtBd2Vzb21lIFRQUDEVMBMGA1UEAwwMWFMyQSBTYW5kYm94MR4wHAYKCZImiZPyLGQBGRYOYXdlc29tZS10cHAuZGUxFjAUBgNVBAsMDUlUIGRlcGFydG1lbnQxEDAOBgNVBAYTB0dlcm1hbnkxDzANBgNVBAgMBkJheWVybjESMBAGA1UEBwwJTnVyZW1iZXJnMR4wHAYDVQRhDBVQU0RERS1GQUtFTkNBLUlEMTIzNDUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCOdiKIlPFrxTwgzjt0IUfYCWQcu+REmOY2GLOe1a2g5epTdeAX5AGDpMxrRTSELPd2JU9bkJ8T8ksIuA/Nr88AD3SpspEYd519zpRf4itkUpus97itRyJAUR9wmI+O7Sof2ln6Srw6R43ccGEbZSgreyL/7GR/eKTTYPQ+7NtogZs1pqTrdpMB4qQv69e8wUK/EewSLrsBv3NPJrA2C3r8ye0lxooYFVQJyHddq4zrt79v4wJQsqQUz8xuotVWCwAHjCWVE5tqi/AHzLDpRb5G4rlLjm/tOgnU4EBBFmtugYPiXE1t83M7Qj6d1NDnhQm78FxO9xMLs6pP3ZZGaZVVAgMBAAGjfzB9MHsGCCsGAQUFBwEDBG8wbQYGBACBmCcCMGMwOTARBgcEAIGYJwEDDAZQU1BfQUkwEQYHBACBmCcBAgwGUFNQX1BJMBEGBwQAgZgnAQQMBlBTUF9JQwwaVHJ1c3QgU2VydmljZSBQcm92aWRlciBBRwoMCkRFLUZBS0VOQ0EwDQYJKoZIhvcNAQELBQADggEBAENf/9aMl6BIP3jii/o5ec4V2Ba5mHpHU4lzZc48+dXvcJRHAiNw8Zr4fOtK798spe7vAHUkZ2POPqXm4eIfQTcv6GVrGtiK/wb+BymZrRyFGngi3yXewrAq1M0jCwTr3almDO3Luow8gwGdJktOECzdG62LA5ZbKU7ljQDjf9ofkb9T4JtIAAeoJVEtMhU6l1E2E6CkiytPXcVpXl9IZGky6a2eJBn7rn7Ry0JSVEF8YsBKQmomwEsylJl019NSXUzIFE8hzmWP/5P3y0zQIDrzhQLcR3BylSngbyM4gcwfjcL+J3gKyiBtUl7N3Jfws4y/EIZfc3A+rdnpTmEhJRs=-----END CERTIFICATE-----

@@ -1,0 +1,36 @@
+localapp:
+  schema:
+    # seem to be shared
+    name: consent
+
+spring:
+  datasource:
+    hikari:
+      jdbc-url: ${common.db.url}
+      username: testtpprest
+      password: testtpprest
+  liquibase:
+    enabled: true
+server:
+  port: ${common.apps.local.onlinebanking.port}
+
+cms:
+  url: ${common.apps.mapping.consentmgmt}
+ledgers:
+  url: ${common.apps.mapping.ledgersapp}
+# Curiously enough it is online-banking-ui URL - ObaOauthController of Psd2-Dynamic-Sandbox
+oba:
+  url: ${common.apps.mapping.onlinebanking-ui}
+self:
+  url: ${common.apps.mapping.onlinebanking-self}
+xs2a:
+  url: ${common.apps.mapping.ledgersgateway} # alias port 8089 in dev
+
+online-banking:
+  url: ${common.apps.mapping.onlinebanking}/api/v1/consents/confirm/{userLogin}/{consentId}/{authorizationId}/{tan}
+  sca:
+    uiredirect: true
+    loginpage: http://localhost:4400/
+
+# To verify
+server_key: 12345

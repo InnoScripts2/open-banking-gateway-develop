@@ -1,0 +1,12 @@
+{
+  "requestId": "cef0cbf3-6458-4f13-a418-ee4d7e750511",
+  "aisConsent": {
+    "access": null,
+    "recurringIndicator": true,
+    "validUntil": "2021-03-01",
+    "frequencyPerDay": 10,
+    "combinedServiceIndicator": false
+  },
+  "psuIpAddress": "1.1.1.1",
+  "psuIpPort": "5555"
+}

@@ -1,0 +1,57 @@
+<form (ngSubmit)="onSubmit()" [formGroup]="loginForm" #loginFormDir="ngForm">
+  <div class="card card-frame">
+    <div class="card-body">
+      <h4 class="card-title">Hello!</h4>
+      <div class="form__margin">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            [ngClass]="{ 'is-invalid': username?.errors && username?.dirty }"
+            autocomplete="off"
+            class="form-control"
+            formControlName="username"
+            id="username"
+            type="text"
+          />
+          <div
+            *ngIf="username?.errors?.required && (username?.dirty || loginFormDir.submitted)"
+            class="invalid-feedback d-block"
+          >
+            Username is Required
+          </div>
+          <div *ngIf="username?.errors?.pattern && username?.dirty" class="invalid-feedback">
+            Username must contain only Letters or Digits
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            [ngClass]="{ 'is-invalid': password?.errors && password?.dirty }"
+            autocomplete="off"
+            class="form-control"
+            formControlName="password"
+            id="password"
+            type="password"
+          />
+          <div
+            *ngIf="password?.errors?.required && (password?.dirty || loginFormDir.submitted)"
+            class="invalid-feedback d-block"
+          >
+            Password is Required
+          </div>
+          <div *ngIf="password?.errors?.pattern && password?.dirty" class="invalid-feedback">
+            Password must be 4 characters long
+          </div>
+        </div>
+      </div>
+      <div class="center-buttons">
+        <button class="btn btn-primary btn-center btn-block" type="submit">Login</button>
+        <button class="btn btn-center btn-block btn-outline-secondary" (click)="gmailOauth2Login()" type="button">
+          <img class="icon-google" src="/assets/icons/btn_google_light_normal_ios.svg" alt="Text" />
+          Login with Google
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

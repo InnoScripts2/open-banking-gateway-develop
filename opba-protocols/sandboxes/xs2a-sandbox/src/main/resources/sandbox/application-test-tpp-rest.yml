@@ -1,0 +1,37 @@
+localapp:
+  schema:
+    # seem to be shared
+    name: consent
+
+spring:
+  datasource:
+    hikari:
+      jdbc-url: ${common.db.url}
+      username: testtpprest
+      password: testtpprest
+  consent:
+    datasource:
+      hikari:
+        jdbc-url: ${common.db.url}
+        username: testtpprest
+        password: testtpprest
+  tpp:
+    datasource:
+      hikari:
+        jdbc-url: ${common.db.url-base}tpp
+        username: testtpprest
+        password: testtpprest
+  liquibase:
+    enabled: true
+server:
+  port: ${common.apps.local.tpprest.port}
+
+ledgers:
+  url: ${common.apps.mapping.ledgersapp}
+
+iban_generator_bankcode_nisp: 76070025
+iban_generator_bankcode_random: 90000001
+iban_generator_countrycode: DE
+
+# To verify
+server_key: 12345

@@ -1,0 +1,125 @@
+<databaseChangeLog logicalFilePath="db.changelog-1.0.xml" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-sequence-bank" author="mhr" >
+        <!-- startValue is high enough to skip auto-filled banks via migrations sql/csv load -->
+        <createSequence sequenceName="bank_id_sequence" startValue="1000000000" incrementBy="50"/>
+    </changeSet>
+
+    <changeSet id="create-table-bank" author="mhr">
+        <createTable tableName="${table-prefix}bank">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="${table-prefix}bankPK"/>
+            </column>
+            <column name="uuid" type="UUID">
+                <constraints unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="bic" type="VARCHAR(11)"/>
+            <column name="bank_code" type="VARCHAR(16)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-sequence-bank-profile" author="mhr">
+        <!-- startValue is high enough to skip auto-filled banks via migrations sql/csv load -->
+        <createSequence sequenceName="bank_profile_id_sequence" startValue="1000000000" incrementBy="50"/>
+    </changeSet>
+
+    <changeSet id="create-table-bank-profile" author="mhr">
+        <createTable tableName="${table-prefix}bank_profile">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="${table-prefix}bank_profilePK"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="url" type="VARCHAR(255)"/>
+            <column name="adapter_id" type="VARCHAR(255)"/>
+            <column name="idp_url" type="VARCHAR(255)"/>
+            <column name="sca_approaches" type="VARCHAR(255)"/>
+            <column name="bank_uuid" type="UUID"/>
+            <column name="uuid" type="UUID">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="preferred_approach" type="VARCHAR(32)" defaultValue="REDIRECT"/>
+            <column name="try_to_use_preferred_approach" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="xs2a_skip_consent_authorization" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="xs2a_start_consent_authorization_with_pin" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="supported_xs2a_api_version" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="unique_payment_purpose" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="external_id" type="VARCHAR(64)"/>
+            <column name="external_interfaces" type="VARCHAR(512)"/>
+            <column name="protocol_type" type="VARCHAR(32)"/>
+            <column name="is_sandbox" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_type_transactions" type="VARCHAR(64)" defaultValue="application/json"/>
+        </createTable>
+        <addNotNullConstraint tableName="${table-prefix}bank_profile" columnName="bank_uuid" columnDataType="VARCHAR(255)"/>
+    </changeSet>
+
+    <changeSet id="add-relation-bank-to-bank-profile" author="mhr">
+        <addForeignKeyConstraint constraintName="fk_bank"
+                                 baseTableName="${table-prefix}bank_profile"
+                                 baseColumnNames="bank_uuid"
+                                 referencedTableName="${table-prefix}bank"
+                                 referencedColumnNames="uuid"/>
+    </changeSet>
+
+    <changeSet id="load_csv_bank_xs2a" author="mhr" context="xs2a-banks OR hbci-banks">
+        <loadData
+                encoding="utf8"
+                relativeToChangelogFile="true"
+                file="csv/v0/0-banks.csv"
+                catalogName=""
+                tableName="${table-prefix}bank">
+            <column header="bank_uuid"  name="uuid"         type="UUID"/>
+            <column header="name"       name="name"         type="STRING"/>
+            <column header="bic"        name="bic"          type="STRING"/>
+            <column header="bank_code"  name="bank_code"    type="STRING"/>
+        </loadData>
+        <rollback />
+    </changeSet>
+
+    <changeSet id="load_csv_bank_profile_xs2a" author="mhr" context="xs2a-banks">
+        <loadData
+                encoding="utf8"
+                relativeToChangelogFile="true"
+                file="csv/v0/0-xs2a_bank-profile.csv"
+                catalogName=""
+                tableName="${table-prefix}bank_profile">
+            <column header="bank_uuid"  name="bank_uuid"                type="UUID"/>
+            <column header="profile_uuid"  name="uuid"                  type="UUID"/>
+            <column header="name"       name="name"                     type="skip"/>
+            <column header="bic"        name="bic"                      type="skip"/>
+            <column header="url"        name="url"                      type="STRING"/>
+            <column header="adapter_id" name="adapter_id"               type="STRING"/>
+            <column header="bank_code"  name="bank_code"                type="skip"/>
+            <column header="idp_url"    name="idp_url"                  type="STRING"/>
+            <column header="aspsp_sca_approaches" name="sca_approaches" type="STRING"/>
+            <column header="protocol_type" name="protocol_type"         type="STRING"/>
+            <column header="is_sandbox"   name="is_sandbox"             type="BOOLEAN"/>
+        </loadData>
+        <rollback />
+    </changeSet>
+    
+    <changeSet id="create_index" author="mhr">
+        <sql dbms="postgresql" stripComments="true">
+            CREATE INDEX bank_trgm_idx1 ON ${table-prefix}bank USING gin (name gin_trgm_ops);
+            CREATE INDEX bank_trgm_idx2 ON ${table-prefix}bank USING gin (bic gin_trgm_ops);
+            CREATE INDEX bank_trgm_idx3 ON ${table-prefix}bank USING gin (bank_code gin_trgm_ops);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

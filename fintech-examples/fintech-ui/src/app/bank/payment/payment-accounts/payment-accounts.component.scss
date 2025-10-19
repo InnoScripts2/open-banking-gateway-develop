@@ -1,0 +1,11 @@
+@use 'src/assets/themes/variables' as vars;
+
+.add-mr-mb:not(:last-child) {
+  margin-right: 1rem;
+  margin-bottom: 1rem;
+}
+
+form {
+  max-width: 232px;
+  width: 100%;
+}

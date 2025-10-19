@@ -1,0 +1,18 @@
+<databaseChangeLog logicalFilePath="db.changelog-1.0.xml" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+
+    <changeSet id="create-table-session-from-aspsp" author="nsa">
+        <createTable tableName="${table-prefix}session_from_aspsp">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="${table-prefix}sessionAPK"/>
+            </column>
+            <column name="auth_id" type="VARCHAR(255)"/>
+            <column name="cookie" type="VARCHAR(2048)"/>
+            <column name="xsrf_token" type="VARCHAR(255)"/>
+
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

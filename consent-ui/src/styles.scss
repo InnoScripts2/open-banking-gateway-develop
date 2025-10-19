@@ -1,0 +1,415 @@
+/* You can add global styles to this file, and also import other style files */
+
+@use './assets/themes/variables' as vars;
+@use './assets/themes/fonts' as fonts;
+@use './assets/themes/mobile' as mobile;
+
+@forward './assets/themes/variables';
+
+@import 'node_modules/bootstrap/scss/bootstrap';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  place-items: center; /* Center content */
+  min-height: 75vh; /* Full viewport height */
+  margin: 0;
+  font-size: var(--textFontSize);
+  font-weight: var(--textFontWeight);
+  font-family: var(--fontFamily), sans-serif;
+  color: var(--bodyFontColor);
+  background: var(--bodyBG);
+
+  strong {
+    font-family: var(--fontFamilyBold), sans-serif;
+  }
+
+  @media screen and (max-width: 768px) {
+    font-size: var(--textFontSize768px);
+  }
+  @media screen and (max-width: 1024px) {
+    font-size: var(--textFontSize1024px);
+  }
+}
+
+.logo {
+  width: 163px;
+  height: auto;
+  margin-bottom: 2.25rem;
+}
+
+.header {
+  &__title {
+    font-size: 2rem;
+  }
+}
+
+.navbar-brand {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+}
+
+a {
+  color: var(--anchorFontColor);
+
+  &.active,
+  &:hover {
+    color: var(--anchorFontColorHover);
+  }
+
+  &.text-primary:hover,
+  &.text-primary:focus {
+    color: var(--anchorFontColorHover) !important;
+  }
+}
+
+.text-dark {
+  color: var(--bodyFontColor) !important;
+}
+
+.text-light-dark {
+  color: vars.$COLOR_LIGHT_DARK;
+}
+
+.card {
+  border: none;
+  margin-right: auto;
+  margin-left: auto;
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+
+  &--large {
+    padding: 2rem 2rem;
+  }
+
+  .card-img-top {
+    width: 420px;
+    margin: auto;
+  }
+
+  .card-body {
+    padding: 0;
+
+    .form-control {
+      padding-left: 1rem;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      font-size: 1.125rem;
+
+    }
+    .customDate {
+      width: 12.5rem;
+      padding-top: 18px;
+      margin-left: 1rem;
+    }
+    .customNumber {
+      width: 7rem;
+      padding-top: 18px;
+      margin-left: 1rem;
+      margin-right: 1rem;
+    }
+    .customStrong {
+      padding: 5px 0 0 0;
+    }
+  }
+
+  .card-footer {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+.info-block {
+  padding-bottom: 1rem;
+}
+.no-bg-color {
+  background-color: vars.$COLOR_WHITE;
+  border: none;
+}
+.form__margin {
+  margin-bottom: 1.5rem;
+}
+.form-check {
+  padding-left: 0;
+
+  .checkboxLabel {
+    padding: 0 0 0 20.5px;
+  }
+
+  label {
+    font-family: var(--fontFamilyMedium), sans-serif;
+    color: #21242c;
+    font-size: 1.125rem;
+    position: relative;
+    padding-left: 2.625rem;
+    line-height: 1.2;
+
+    .radioSelector {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid vars.$text-muted;
+      display: block;
+      position: absolute;
+      left: 0;
+      top: calc(50% - 9px);
+    }
+    input {
+      opacity: 0;
+      position: absolute;
+
+      &.selected ~ .radioSelector {
+        &:after {
+          content: '';
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background-color: vars.$text-muted;
+          position: absolute;
+          left: 3px;
+          top: 3px;
+        }
+      }
+    }
+  }
+}
+
+.inputWrapper {
+  margin-left: 2.03124rem;
+}
+
+.currencySelector {
+  margin-left: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .bg-sm-light {
+    background-color: vars.$COLOR_LIGHT_GREY-10;
+  }
+}
+
+#fixed {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+}
+
+.confirm-payment-cancellation-block {
+  position: fixed;
+
+  @media (max-width: 767px) {
+    position: relative;
+  }
+}
+
+.confirm-payment-block {
+  position: fixed;
+
+  @media (max-width: 767px) {
+    position: relative;
+  }
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fontFamilySemiBold), sans-serif;
+}
+
+h1 {
+  font-size: var(--h1FontSize);
+  font-weight: var(--h1FontWeight);
+  color: var(--colorPrimary);
+}
+
+h2 {
+  font-size: var(--h2FontSize);
+  font-weight: var(--h2FontWeight);
+}
+
+h3 {
+  font-size: var(--h3FontSize);
+  font-weight: var(--h3FontWeight);
+}
+
+section {
+  margin-bottom: 2.625rem;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.nav-item {
+  &:hover {
+    background: var(--menuItemHovered);
+  }
+}
+
+.page-item.active {
+  .page-link {
+    background: var(--colorSecondary);
+    border-color: var(--colorSecondary);
+  }
+}
+
+.page-item {
+  .page-link {
+    color: var(--colorSecondary);
+  }
+}
+
+.btn {
+  white-space: nowrap;
+  border-radius: var(--buttonBorderRadius);
+  font-size: 1.25rem;
+  padding: 0.8rem 0.75rem 0.4rem 0.75rem;
+
+  &-primary {
+    color: var(--buttonTextColor);
+
+    background: var(--buttonBG);
+
+    &:hover {
+      background: var(--buttonHovered);
+    }
+
+    &:disabled {
+      background: var(--buttonBG);
+      opacity: 0.65;
+    }
+
+    &:focus {
+      outline: none;
+      background: var(--buttonClicked);
+    }
+
+    &:active {
+      background-color: inherit;
+    }
+  }
+
+  &-outline-secondary {
+    color: var(--secondaryButtonTextColor);
+    background: var(--secondaryButtonBG);
+    border: var(--secondaryButtonBorderStyle);
+
+    &:hover {
+      color: var(--secondaryButtonHoveredTextColor);
+      background: var(--secondaryButtonHovered);
+      border: 1px solid transparent;
+    }
+
+    &:disabled {
+      background: var(--secondaryButtonBG);
+      opacity: 0.65;
+    }
+
+    &:focus {
+      outline: none;
+      background: var(--secondaryButtonClicked);
+      color: var(--secondaryButtonClickedTextColor);
+    }
+  }
+
+  &-outline-back {
+    color: var(--backButtonTextColor);
+    background: var(--backButtonBG);
+    border: var(--backButtonBorderStyle);
+
+    &:hover {
+      color: var(--backButtonHoveredTextColor);
+      background: var(--backButtonHovered);
+      border: 1px solid transparent;
+    }
+
+    &:disabled {
+      background: var(--backButtonBG);
+      opacity: 0.65;
+    }
+
+    &:focus {
+      outline: none;
+      background: var(--backButtonClicked);
+      color: var(--backButtonClickedTextColor);
+    }
+  }
+}
+
+.form-control,
+.form-control:focus {
+  background: var(--inputBG);
+  outline: none;
+  border: none;
+  border-radius: 0;
+}
+
+.flex-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  p {
+    padding: 5px 0 0 15px;
+    margin-bottom: 0;
+  }
+}
+
+.icons {
+  width: 38px;
+  height: auto;
+
+  &--big {
+    width: 5.75rem;
+    height: 5.75rem;
+  }
+}
+
+label {
+  font-size: 1rem;
+}
+.text-secondary {
+  color: vars.$COLOR_TEXT_LIGHT !important;
+}
+
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: var(--h1FontSize768px);
+    font-weight: var(--h1FontWeight768px);
+  }
+
+  h2 {
+    font-size: var(--h2FontSize768px);
+    font-weight: var(--h2FontWeight768px);
+  }
+
+  h3 {
+    font-size: var(--h3FontSize768px);
+    font-weight: var(--h3FontWeight768px);
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  h1 {
+    font-size: var(--h1FontSize1024px);
+    font-weight: var(--h1FontWeight1024px);
+  }
+
+  h2 {
+    font-size: var(--h2FontSize1024px);
+    font-weight: var(--h2FontWeight1024px);
+  }
+
+  h3 {
+    font-size: var(--h3FontSize1024px);
+    font-weight: var(--h3FontWeight1024px);
+  }
+}
+

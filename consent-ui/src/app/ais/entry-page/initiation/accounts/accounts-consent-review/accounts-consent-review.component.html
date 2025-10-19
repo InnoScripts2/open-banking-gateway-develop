@@ -1,0 +1,98 @@
+<div class="card">
+  <div class="card-body">
+    <section>
+      <h2>Access permission for accounts in {{ aspspName }}</h2>
+      <p class="text-secondary">
+        Review an account access level for <strong>{{ finTechName }}</strong>
+      </p>
+    </section>
+    <form [formGroup]="consentReviewForm">
+    <ng-container [ngSwitch]="aisConsent.level">
+      <section>
+        <ng-container *ngSwitchCase="accountAccessLevel.ALL_ACCOUNTS">
+          <div class="flex-container">
+            <img src="assets/icons/icons8-mark_view_as_non_hidden.png" alt="accounts" class="icons" />
+            <p>All your accounts will be visible</p>
+          </div>
+        </ng-container>
+        <ng-container *ngSwitchCase="accountAccessLevel.ALL_ACCOUNTS_WITH_BALANCES">
+          <div class="flex-container">
+            <img src="assets/icons/icons8-mark_view_as_non_hidden.png" alt="accounts" class="icons" />
+            <p>All your accounts with balances will be visible</p>
+          </div>
+        </ng-container>
+        <ng-container *ngSwitchCase="accountAccessLevel.FINE_GRAINED">
+          <div class="flex-container">
+            <img src="assets/icons/icons8-mark_view_as_non_hidden.png" alt="accounts" class="icons" />
+            <p>Dedicated access to <strong>account details and transactions</strong> for following accounts IBAN's:</p>
+          </div>
+          <div class="ml-4">
+            <ul class="list-group ml-5 mb-4">
+              <li *ngFor="let account of aisConsent.consent.access.accounts">
+                <strong>{{ account.iban }} {{ account.currency }}</strong>
+              </li>
+            </ul>
+          </div>
+        </ng-container>
+        <div
+          class="flex-container"
+          [ngClass]="{ 'is-invalid': validUntilDate.touched && validUntilDate.errors }">
+          <img src="assets/icons/icons8-approval.png" alt="approval" class="icons" />
+          <p>
+            The consent will be valid until:
+          </p>
+          <input
+            class="form-control customDate"
+            type="date"
+            id="validUntilDate"
+            name="validUntilDate"
+            formControlName="validUntilDate"
+            [ngClass]="{ 'is-invalid': validUntilDate.touched && validUntilDate.errors }"
+          />
+        </div>
+        <div
+          class="flex-container"
+          [ngClass]="{ 'is-invalid': frequencyPerDay.touched && frequencyPerDay.errors }">
+          <img src="assets/icons/icons8-last_24_hours.png" alt="24_hours" class="icons" />
+          <p>
+            The consent can be used:
+          </p>
+          <input
+            class="form-control customNumber"
+            type="number"
+            id="frequencyPerDay"
+            name="frequencyPerDay"
+            formControlName="frequencyPerDay"
+            [ngClass]="{ 'is-invalid': frequencyPerDay.touched && frequencyPerDay.errors }"/>
+          <strong class="customStrong"> times per day </strong>
+        </div>
+        <div class="form-check inputWrapper">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="recurringIndicator"
+            name="recurringIndicator"
+            formControlName="recurringIndicator"/>
+          <label class="form-check-label checkboxLabel" for="recurringIndicator">The consent is for recurring access to the account data</label>
+        </div>
+        <div class="invalid-feedback mb-2">
+          <span
+            *ngIf="frequencyPerDay.touched && frequencyPerDay.errors;">
+            The value must be greater than or equal to 1.
+          </span>
+          <span
+            *ngIf="validUntilDate.touched && validUntilDate.errors;">
+            Incorrect date format or date (past dates cannot be used).
+          </span>
+        </div>
+      </section>
+    </ng-container>
+    </form>
+    <div class="form-group d-flex flex-row justify-content-lg-between">
+      <button id="do_back" class="btn md-6 w-100 mr-sm-2 mr-md-3 btn-outline-back" (click)="onBack()">Back</button>
+      <button
+        [disabled]="!consentReviewForm.valid"
+        id="do_submit" type="button" class="btn md-6 w-100 btn-primary" (click)="onConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>

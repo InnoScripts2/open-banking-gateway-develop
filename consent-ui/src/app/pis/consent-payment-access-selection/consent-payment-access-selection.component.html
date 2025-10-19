@@ -1,0 +1,29 @@
+<form [formGroup]="paymentAccessForm">
+  <div class="card">
+    <div class="card-body">
+      <ng-container *ngIf="hasGeneralViolations()">
+        <section>
+          <h2>Payment initiation for {{ aspspName }}</h2>
+          <consent-app-dynamic-inputs
+            [targetForm]="paymentAccessForm"
+            [violations]="state.getGeneralViolations()"
+            [payment]="payment"
+          ></consent-app-dynamic-inputs>
+        </section>
+      </ng-container>
+
+      <div class="d-sm-flex">
+        <button id="do_deny" class="btn btn-outline-secondary w-100 mr-4" (click)="onDeny()">Deny payment</button>
+        <button
+          id="do_submit"
+          type="button"
+          class="btn btn-primary w-100"
+          [disabled]="paymentAccessForm.invalid"
+          (click)="onConfirm()"
+        >
+          Review payment
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

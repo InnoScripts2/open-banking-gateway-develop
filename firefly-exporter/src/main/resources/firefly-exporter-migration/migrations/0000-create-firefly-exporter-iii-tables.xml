@@ -1,0 +1,104 @@
+<databaseChangeLog logicalFilePath="db.changelog-1.0.xml" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2020-09-20-15" author="valb3r" >
+        <createTable tableName="${table-prefix}account_export_job">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="accounts_exported" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_accounts_errored" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_accounts_to_export" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error_message" type="VARCHAR(64)"/>
+            <column name="completed" type="BOOLEAN"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="account_export_id_seq" incrementBy="50"/>
+
+        <createTable tableName="${table-prefix}transaction_export_job">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="accounts_exported" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_accounts_errored" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_accounts_to_export" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_transactions_exported" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_transactions_errored" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error_message" type="VARCHAR(64)"/>
+            <column name="completed" type="BOOLEAN"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="transaction_export_id_seq" incrementBy="50"/>
+
+        <createTable tableName="${table-prefix}bank_consent">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="bank_profile_uuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consent_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="consent_id_seq" incrementBy="50"/>
+        <createIndex tableName="${table-prefix}bank_consent" indexName="${table-prefix}bank_consent_consent_id_idx">
+            <column name="consent_id"/>
+        </createIndex>
+
+        <createTable tableName="${table-prefix}redirect_state">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="authorization_session_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="service_session_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bank_profile_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
